@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, CircleHelp, Home, FolderOpen, LayoutGrid, LogOut, Menu, UserRound, X } from 'lucide-react'
+import { Bell, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Menu, UserRound, X } from 'lucide-react'
 import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
@@ -10,12 +10,15 @@ const NAV = [
   { to: '/', label: 'Início', icon: Home, end: true },
   { to: '/documentos', label: 'Documentos', icon: FolderOpen },
   { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid },
+  /** Só para o escritório (administrador e colaborador). */
+  { to: '/atendimento', label: 'Atendimento', icon: Headset, officeOnly: true },
 ]
 
 export function AppHeader() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const nav = NAV.filter((n) => !n.officeOnly || (user && user.role !== 'Client'))
 
   const handleLogout = async () => {
     await logout()
@@ -45,7 +48,7 @@ export function AppHeader() {
         </NavLink>
 
         <nav aria-label="Principal" className="mx-auto hidden h-full md:flex">
-          {NAV.map(({ to, label, end }) => (
+          {nav.map(({ to, label, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -119,7 +122,7 @@ export function AppHeader() {
 
       {mobileOpen && (
         <nav aria-label="Principal (móvel)" className="border-t border-slate-100 bg-white px-2 py-2 md:hidden">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {nav.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}

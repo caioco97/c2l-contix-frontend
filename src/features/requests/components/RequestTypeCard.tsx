@@ -7,7 +7,7 @@ export function RequestTypeCard({ type }: { type: ServiceRequestType }) {
   const Icon = requestIcons[type.code] ?? ClipboardList
   return (
     <Link
-      to={type.group === 'nfe' ? '/portal/nfe' : `/portal/solicitacoes/nova/${type.code}`}
+      to={`/portal/solicitacoes/nova/${type.code}`}
       className="group flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
     >
       <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
