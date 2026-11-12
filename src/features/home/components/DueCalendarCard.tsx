@@ -18,8 +18,8 @@ export function DueCalendarCard({ companyId }: { companyId: string }) {
     queryFn: () => documentsApi.dueInMonth(companyId, monthKey),
   })
 
-  const markedDays = useMemo(() => data.map((d) => parseISO(d.dueDate!)), [data])
-  const dayDocs = selected ? data.filter((d) => isSameDay(parseISO(d.dueDate!), selected)) : []
+  const markedDays = useMemo(() => data.map((d) => parseISO(d.dueDate)), [data])
+  const dayDocs = selected ? data.filter((d) => isSameDay(parseISO(d.dueDate), selected)) : []
 
   return (
     <Card>

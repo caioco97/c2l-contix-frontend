@@ -1,5 +1,4 @@
 import { api } from '@/lib/api'
-import { env } from '@/config/env'
 import { mockDelay } from '@/lib/mock'
 import { mockRequestTypes } from '@/mocks/data'
 import { mockStore } from '@/mocks/store'
@@ -13,6 +12,9 @@ export interface CreateRequestInput {
   attachments: File[]
 }
 
+/** Ainda não existe na API: usa dados simulados até o endpoint ser criado. */
+const MOCK_ONLY = true
+
 export const requestKeys = {
   types: (companyId: string) => ['requests', companyId, 'types'] as const,
   list: (companyId: string) => ['requests', companyId, 'list'] as const,
@@ -20,19 +22,19 @@ export const requestKeys = {
 
 export const requestsApi = {
   async types(companyId: string): Promise<ServiceRequestType[]> {
-    if (env.useMocks) return mockDelay(mockRequestTypes, 200)
-    const { data } = await api.get<ServiceRequestType[]>(`/companies/${companyId}/request-types`)
+    if (MOCK_ONLY) return mockDelay(mockRequestTypes, 200)
+    const { data } = await api.get<ServiceRequestType[]>(`/empresas/${companyId}/request-types`)
     return data
   },
 
   async list(companyId: string): Promise<ServiceRequest[]> {
-    if (env.useMocks) return mockDelay(mockStore.requests(companyId), 250)
-    const { data } = await api.get<ServiceRequest[]>(`/companies/${companyId}/requests`)
+    if (MOCK_ONLY) return mockDelay(mockStore.requests(companyId), 250)
+    const { data } = await api.get<ServiceRequest[]>(`/empresas/${companyId}/requests`)
     return data
   },
 
   async create(companyId: string, input: CreateRequestInput): Promise<ServiceRequest> {
-    if (env.useMocks) {
+    if (MOCK_ONLY) {
       const list = mockStore.requests(companyId)
       const type = mockRequestTypes.find((t) => t.code === input.typeCode)
       const created: ServiceRequest = {
@@ -54,7 +56,7 @@ export const requestsApi = {
     form.append('department', input.department)
     form.append('description', input.description)
     input.attachments.forEach((f) => form.append('attachments', f))
-    const { data } = await api.post<ServiceRequest>(`/companies/${companyId}/requests`, form, {
+    const { data } = await api.post<ServiceRequest>(`/empresas/${companyId}/requests`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
     return data

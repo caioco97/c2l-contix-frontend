@@ -3,6 +3,11 @@ import { env } from '@/config/env'
 import { mockDelay, mockError } from '@/lib/mock'
 import { mockUser } from '@/mocks/data'
 import type { CurrentUser, LoginRequest, LoginResponse } from '@/types/auth'
+import type { LoginResponseDto, UsuarioDto } from '@/types/dto'
+import { toCurrentUser, toTokens } from './mappers'
+
+/** Recuperação de senha ainda não existe na API: segue simulada. */
+const PASSWORD_RESET_MOCK = true
 
 function fakeTokens() {
   return {
@@ -18,14 +23,14 @@ export const authApi = {
       if (body.password !== '123456') return mockError(401, 'E-mail ou senha inválidos.')
       return mockDelay({ ...fakeTokens(), user: { ...mockUser, email: body.email } }, 600)
     }
-    const { data } = await api.post<LoginResponse>('/auth/login', body)
-    return data
+    const { data } = await api.post<LoginResponseDto>('/auth/login', { email: body.email, senha: body.password })
+    return { ...toTokens(data), user: toCurrentUser(data.usuario) }
   },
 
   async me(): Promise<CurrentUser> {
     if (env.useMocks) return mockDelay(mockUser, 200)
-    const { data } = await api.get<CurrentUser>('/auth/me')
-    return data
+    const { data } = await api.get<UsuarioDto>('/auth/me')
+    return toCurrentUser(data)
   },
 
   async logout(refreshToken: string): Promise<void> {
@@ -34,12 +39,12 @@ export const authApi = {
   },
 
   async forgotPassword(email: string): Promise<void> {
-    if (env.useMocks) return mockDelay(undefined, 600)
+    if (env.useMocks || PASSWORD_RESET_MOCK) return mockDelay(undefined, 600)
     await api.post('/auth/forgot-password', { email })
   },
 
   async resetPassword(body: { token: string; password: string }): Promise<void> {
-    if (env.useMocks) return mockDelay(undefined, 600)
-    await api.post('/auth/reset-password', body)
+    if (env.useMocks || PASSWORD_RESET_MOCK) return mockDelay(undefined, 600)
+    await api.post('/auth/reset-password', { token: body.token, novaSenha: body.password })
   },
 }

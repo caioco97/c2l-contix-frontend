@@ -18,7 +18,7 @@ Por padrão o app roda com **dados simulados** (`VITE_USE_MOCKS=true`), sem prec
 Para usar a API .NET, crie um `.env.development.local`:
 
 ```env
-VITE_API_URL=http://localhost:5000/api/v1
+VITE_API_URL=http://localhost:5080/api/v1
 VITE_USE_MOCKS=false
 ```
 
@@ -49,42 +49,41 @@ src/
   config/         variáveis de ambiente
   features/       módulos por domínio
     auth/         login, recuperação de senha, sessão, rotas protegidas
-    companies/    empresa ativa (seletor + header X-Company-Id)
+    companies/    empresa ativa (seletor)
     home/         tela Início (calendário, notícias, documentos, CND)
     documents/    pastas, listagem, upload, download, exclusão, envio
     requests/     portal do cliente: catálogo e solicitações
     news/ cnd/    APIs de notícias e certidões
   lib/            cliente Axios, query client, formatadores, utilitários
   mocks/          dados simulados usados enquanto a API não existe
-  types/          contratos (DTOs) compartilhados com a API
+  types/          tipos das telas (domain) e contratos da API (dto)
 ```
 
 Cada feature tem um `api.ts` que chama a API real ou os mocks, conforme `VITE_USE_MOCKS`. As telas só conhecem essas funções, então trocar mock por API não exige mudar componentes.
 
 ## Autenticação
 
-- `POST /auth/login` devolve `accessToken`, `refreshToken`, `expiresAt` e `user`.
-- O interceptor do Axios envia `Authorization: Bearer` e, em caso de `401`, chama `POST /auth/refresh` **uma única vez** para todas as requisições pendentes (fila single-flight) e repete a chamada original. Se o refresh falhar, a sessão é encerrada e o usuário volta ao login.
+- `POST /auth/login` com `{ email, senha }` devolve `accessToken`, `accessTokenExpiraEm`, `refreshToken`, `refreshTokenExpiraEm` e `usuario`.
+- O interceptor do Axios envia `Authorization: Bearer` e, em caso de `401`, chama `POST /auth/refresh` **uma única vez** para todas as requisições pendentes (fila single-flight) e repete a chamada original. O refresh é rotativo; se falhar, a sessão é encerrada e o usuário volta ao login.
 - `GET /auth/me` restaura a sessão ao recarregar a página.
-- A empresa ativa vai no header `X-Company-Id`.
 
-## Contrato esperado da API (`/api/v1`)
+Com a API local (`docker compose up` no backend), use `cliente@contix.dev`, `colaborador@contix.dev` ou `admin@contix.dev` com a senha `Contix@123`.
 
-| Método | Rota | Uso |
-| --- | --- | --- |
-| POST | `/auth/login`, `/auth/refresh`, `/auth/logout` | sessão |
-| GET | `/auth/me` | usuário logado |
-| POST | `/auth/forgot-password`, `/auth/reset-password` | recuperação de senha |
-| GET | `/me/companies` | empresas do usuário |
-| GET | `/companies/{id}/folders` | árvore de pastas com `unreadCount` |
-| GET | `/companies/{id}/documents?folderId&filter&search&sortBy&sortDir&page&pageSize` | listagem paginada |
-| GET | `/companies/{id}/documents/due?month=yyyy-MM` | vencimentos do mês |
-| POST | `/companies/{id}/folders/{folderId}/documents` | upload (multipart) |
-| POST | `/companies/{id}/documents/download` | download (zip se vários) |
-| DELETE | `/companies/{id}/documents` | exclusão em lote |
-| POST | `/companies/{id}/documents/send` | envio por e-mail |
-| GET | `/companies/{id}/news?read=` · POST `/news/{id}/read` | notícias |
-| GET | `/companies/{id}/cnds` | certidões |
-| GET | `/companies/{id}/request-types` · GET/POST `/companies/{id}/requests` | solicitações |
+## Integração com a API (`/api/v1`)
 
-Erros seguem `ProblemDetails` (RFC 7807); a mensagem exibida vem de `errors`, `detail` ou `title`. Os tipos estão em `src/types/`.
+A API usa nomes em português; os DTOs estão em `src/types/dto.ts` e cada `api.ts` converte para os tipos das telas (`src/types/domain.ts`). A empresa ativa vai na rota (`/empresas/{id}/...`).
+
+| Método | Rota | Uso | Status |
+| --- | --- | --- | --- |
+| POST | `/auth/login`, `/auth/refresh`, `/auth/logout` · GET `/auth/me` | sessão | integrado |
+| GET | `/empresas` | empresas do usuário (paginado) | integrado |
+| GET | `/empresas/{id}/pastas` | árvore de pastas com `documentosNaoLidos` | integrado |
+| GET | `/empresas/{id}/documentos?pastaId&busca&status&orderBy&desc&page&pageSize` | listagem | integrado |
+| GET | `/empresas/{id}/documentos/vencimentos?inicio&fim` | calendário | integrado |
+| POST | `/empresas/{id}/documentos` (multipart `pastaId`, `arquivos[]`, `comentario`, `dataVencimento`) | upload | integrado |
+| GET | `/empresas/{id}/documentos/{docId}/download` · POST `/empresas/{id}/documentos/download` | download (zip se vários) | integrado |
+| POST | `/empresas/{id}/documentos/{docId}/lido` | marcar como lido | integrado |
+| DELETE | `/empresas/{id}/documentos/{docId}` | exclusão | integrado |
+| — | recuperação de senha, envio por e-mail, notícias, CND, solicitações | | simulado até a API existir |
+
+Erros seguem `ProblemDetails` (RFC 7807); a mensagem exibida vem de `errors`, `detail` ou `title`.

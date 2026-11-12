@@ -3,22 +3,16 @@ import { env } from '@/config/env'
 import { tokenStorage } from '@/lib/tokenStorage'
 import type { AuthTokens } from '@/types/auth'
 import type { ProblemDetails } from '@/types/api'
+import type { TokensDto } from '@/types/dto'
 
 export const api = axios.create({
   baseURL: env.apiUrl,
   headers: { 'Content-Type': 'application/json' },
 })
 
-const ACTIVE_COMPANY_HEADER = 'X-Company-Id'
-let activeCompanyId: string | null = null
-export function setActiveCompanyHeader(id: string | null) {
-  activeCompanyId = id
-}
-
 api.interceptors.request.use((config) => {
   const tokens = tokenStorage.get()
   if (tokens?.accessToken) config.headers.Authorization = `Bearer ${tokens.accessToken}`
-  if (activeCompanyId) config.headers[ACTIVE_COMPANY_HEADER] = activeCompanyId
   return config
 })
 
@@ -38,11 +32,16 @@ async function refreshTokens(): Promise<AuthTokens> {
   const current = tokenStorage.get()
   if (!current?.refreshToken) throw new Error('Sem refresh token')
   // Usa axios "cru" para não passar pelos interceptors.
-  const { data } = await axios.post<AuthTokens>(`${env.apiUrl}/auth/refresh`, {
+  const { data } = await axios.post<TokensDto>(`${env.apiUrl}/auth/refresh`, {
     refreshToken: current.refreshToken,
   })
-  tokenStorage.set(data)
-  return data
+  const tokens: AuthTokens = {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    expiresAt: data.accessTokenExpiraEm,
+  }
+  tokenStorage.set(tokens)
+  return tokens
 }
 
 api.interceptors.response.use(

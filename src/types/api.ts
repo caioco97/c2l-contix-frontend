@@ -4,6 +4,7 @@ export interface PagedResult<T> {
   page: number
   pageSize: number
   total: number
+  totalPages?: number
 }
 
 /** RFC 7807 — formato de erro retornado pela API. */

@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { setActiveCompanyHeader } from '@/lib/api'
 import type { Company } from '@/types/domain'
 import { companiesApi } from './api'
 
@@ -34,9 +33,6 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
 
   const company = companies.find((c) => c.id === selectedId) ?? companies[0] ?? null
 
-  // Mantém o header X-Company-Id sincronizado antes das queries dependentes rodarem.
-  setActiveCompanyHeader(company?.id ?? null)
-
   useEffect(() => {
     if (!company) return
     try {
@@ -49,7 +45,6 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   const setCompany = useCallback(
     (id: string) => {
       setSelectedId(id)
-      setActiveCompanyHeader(id)
       // Dados por empresa são recarregados (queries usam o id na chave).
       queryClient.invalidateQueries({ predicate: (q) => q.queryKey[0] !== 'companies' })
     },

@@ -1,11 +1,13 @@
-import { isSameMonth, parseISO } from 'date-fns'
+import { endOfMonth, format, formatISO, isSameMonth, parseISO } from 'date-fns'
 import { api } from '@/lib/api'
 import { env } from '@/config/env'
 import { mockDelay } from '@/lib/mock'
+import { queryClient } from '@/lib/queryClient'
 import { mockFolders, mockUser } from '@/mocks/data'
 import { mockStore } from '@/mocks/store'
 import type { PagedResult } from '@/types/api'
-import type { DocumentFolder, DocumentItem, ReadFilter } from '@/types/domain'
+import type { DocumentFolder, DocumentItem, DueDocument, ReadFilter } from '@/types/domain'
+import type { DocumentoDto, PagedDto, PastaDto, VencimentoDto } from '@/types/dto'
 
 export type DocumentSortField = 'name' | 'publishedAt' | 'dueDate' | 'modifiedAt'
 
@@ -47,11 +49,75 @@ function withUnreadCounts(folders: DocumentFolder[], docs: DocumentItem[]): Docu
   })
 }
 
+/* ---------- Conversão DTO (API) -> domínio (telas) ---------- */
+
+const SORT_FIELD: Record<DocumentSortField, string> = {
+  name: 'nome',
+  publishedAt: 'publicadoEm',
+  dueDate: 'dataVencimento',
+  modifiedAt: 'modificado',
+}
+const READ_STATUS: Record<ReadFilter, string> = { all: 'Todos', unread: 'NaoLidos', read: 'Lidos' }
+
+function toFolder(dto: PastaDto): DocumentFolder {
+  return {
+    id: dto.id,
+    name: dto.nome,
+    parentId: dto.pastaPaiId,
+    unreadCount: dto.documentosNaoLidos,
+    children: dto.subpastas?.length
+      ? [...dto.subpastas].sort((a, b) => a.ordem - b.ordem).map(toFolder)
+      : undefined,
+  }
+}
+
+function folderPaths(folders: DocumentFolder[], prefix = '', acc = new Map<string, string>()) {
+  for (const f of folders) {
+    const path = prefix ? `${prefix}/${f.name}` : f.name
+    acc.set(f.id, path)
+    if (f.children) folderPaths(f.children, path, acc)
+  }
+  return acc
+}
+
+function toDocument(dto: DocumentoDto, paths: Map<string, string>): DocumentItem {
+  return {
+    id: dto.id,
+    folderId: dto.pastaId,
+    folderPath: paths.get(dto.pastaId) ?? '',
+    name: dto.nome,
+    comment: dto.comentario,
+    publishedAt: dto.publicadoEm,
+    dueDate: dto.dataVencimento,
+    addedBy: dto.adicionadoPorNome,
+    modifiedAt: dto.updatedAt ?? dto.publicadoEm,
+    sizeBytes: dto.tamanhoBytes,
+    isRead: dto.lido,
+  }
+}
+
+/** Caminhos das pastas (para exibir "Pessoal/DARF DCTFWeb"), reaproveitando o cache da árvore. */
+async function getFolderPaths(companyId: string) {
+  const folders = await queryClient.ensureQueryData({
+    queryKey: documentKeys.folders(companyId),
+    queryFn: () => documentsApi.folders(companyId),
+  })
+  return folderPaths(folders)
+}
+
+async function fetchDocuments(companyId: string, params: Record<string, unknown>) {
+  const [{ data }, paths] = await Promise.all([
+    api.get<PagedDto<DocumentoDto>>(`/empresas/${companyId}/documentos`, { params }),
+    getFolderPaths(companyId),
+  ])
+  return { ...data, items: data.items.map((d) => toDocument(d, paths)) }
+}
+
 export const documentsApi = {
   async folders(companyId: string): Promise<DocumentFolder[]> {
     if (env.useMocks) return mockDelay(withUnreadCounts(mockFolders, mockStore.documents(companyId)), 200)
-    const { data } = await api.get<DocumentFolder[]>(`/companies/${companyId}/folders`)
-    return data
+    const { data } = await api.get<PastaDto[]>(`/empresas/${companyId}/pastas`)
+    return [...data].sort((a, b) => a.ordem - b.ordem).map(toFolder)
   },
 
   async list(companyId: string, q: DocumentQuery): Promise<PagedResult<DocumentItem>> {
@@ -72,18 +138,47 @@ export const documentsApi = {
       const start = (q.page - 1) * q.pageSize
       return mockDelay({ items: items.slice(start, start + q.pageSize), page: q.page, pageSize: q.pageSize, total: items.length })
     }
-    const { data } = await api.get<PagedResult<DocumentItem>>(`/companies/${companyId}/documents`, { params: q })
-    return data
+    return fetchDocuments(companyId, {
+      pastaId: q.folderId,
+      busca: q.search || undefined,
+      status: READ_STATUS[q.filter],
+      orderBy: SORT_FIELD[q.sortBy],
+      desc: q.sortDir === 'desc',
+      page: q.page,
+      pageSize: q.pageSize,
+    })
   },
 
   /** Documentos com vencimento no mês informado (yyyy-MM). */
-  async dueInMonth(companyId: string, month: string): Promise<DocumentItem[]> {
+  async dueInMonth(companyId: string, month: string): Promise<DueDocument[]> {
+    const ref = parseISO(`${month}-01`)
     if (env.useMocks) {
-      const ref = parseISO(`${month}-01`)
-      return mockDelay(mockStore.documents(companyId).filter((d) => d.dueDate && isSameMonth(parseISO(d.dueDate), ref)), 250)
+      return mockDelay(
+        mockStore
+          .documents(companyId)
+          .filter((d) => d.dueDate && isSameMonth(parseISO(d.dueDate), ref))
+          .map((d) => ({
+            id: d.id,
+            name: d.name,
+            dueDate: formatISO(parseISO(d.dueDate!), { representation: 'date' }),
+            folderId: d.folderId,
+            folderPath: d.folderPath,
+            isRead: d.isRead,
+          })),
+        250,
+      )
     }
-    const { data } = await api.get<DocumentItem[]>(`/companies/${companyId}/documents/due`, { params: { month } })
-    return data
+    const { data } = await api.get<VencimentoDto[]>(`/empresas/${companyId}/documentos/vencimentos`, {
+      params: { inicio: format(ref, 'yyyy-MM-dd'), fim: format(endOfMonth(ref), 'yyyy-MM-dd') },
+    })
+    return data.map((v) => ({
+      id: v.documentoId,
+      name: v.nome,
+      dueDate: v.dataVencimento,
+      folderId: v.pastaId,
+      folderPath: v.caminhoPasta,
+      isRead: v.lido,
+    }))
   },
 
   async recent(companyId: string, read: boolean): Promise<DocumentItem[]> {
@@ -97,8 +192,12 @@ export const documentsApi = {
         250,
       )
     }
-    const { data } = await api.get<PagedResult<DocumentItem>>(`/companies/${companyId}/documents`, {
-      params: { filter: read ? 'read' : 'unread', pageSize: 5, sortBy: 'publishedAt', sortDir: 'desc' },
+    const data = await fetchDocuments(companyId, {
+      status: read ? 'Lidos' : 'NaoLidos',
+      orderBy: 'publicadoEm',
+      desc: true,
+      page: 1,
+      pageSize: 5,
     })
     return data.items
   },
@@ -114,7 +213,12 @@ export const documentsApi = {
       })
       return mockDelay({ blob, fileName }, 400)
     }
-    const res = await api.post(`/companies/${companyId}/documents/download`, { ids }, { responseType: 'blob' })
+    const res =
+      ids.length === 1
+        ? await api.get(`/empresas/${companyId}/documentos/${ids[0]}/download`, { responseType: 'blob' })
+        : await api.post(`/empresas/${companyId}/documentos/download`, { documentoIds: ids }, { responseType: 'blob' })
+    // Registra a leitura (idempotente) caso o download não o faça no servidor.
+    await Promise.allSettled(ids.map((id) => api.post(`/empresas/${companyId}/documentos/${id}/lido`)))
     const disposition = String(res.headers['content-disposition'] ?? '')
     const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)
     return { blob: res.data as Blob, fileName: match ? decodeURIComponent(match[1]) : 'documentos.zip' }
@@ -126,7 +230,7 @@ export const documentsApi = {
       for (let i = list.length - 1; i >= 0; i--) if (ids.includes(list[i].id)) list.splice(i, 1)
       return mockDelay(undefined, 300)
     }
-    await api.delete(`/companies/${companyId}/documents`, { data: { ids } })
+    await Promise.all(ids.map((id) => api.delete(`/empresas/${companyId}/documentos/${id}`)))
   },
 
   async upload(
@@ -153,17 +257,18 @@ export const documentsApi = {
       return mockDelay(undefined, 700)
     }
     const form = new FormData()
-    input.files.forEach((f) => form.append('files', f))
-    if (input.comment) form.append('comment', input.comment)
-    if (input.dueDate) form.append('dueDate', input.dueDate)
-    await api.post(`/companies/${companyId}/folders/${input.folderId}/documents`, form, {
+    form.append('pastaId', input.folderId)
+    input.files.forEach((f) => form.append('arquivos', f))
+    if (input.comment) form.append('comentario', input.comment)
+    if (input.dueDate) form.append('dataVencimento', input.dueDate)
+    await api.post(`/empresas/${companyId}/documentos`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
 
-  async send(companyId: string, input: { ids: string[]; message: string }): Promise<void> {
-    if (env.useMocks) return mockDelay(undefined, 500)
-    await api.post(`/companies/${companyId}/documents/send`, input)
+  /** Envio por e-mail ainda não existe na API: segue simulado. */
+  async send(_companyId: string, _input: { ids: string[]; message: string }): Promise<void> {
+    return mockDelay(undefined, 500)
   },
 }
 

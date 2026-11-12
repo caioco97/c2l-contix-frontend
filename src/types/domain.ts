@@ -28,6 +28,17 @@ export interface DocumentItem {
   isRead: boolean
 }
 
+/** Documento com vencimento, exibido no calendário. */
+export interface DueDocument {
+  id: string
+  name: string
+  /** yyyy-MM-dd */
+  dueDate: string
+  folderId: string
+  folderPath: string
+  isRead: boolean
+}
+
 export type ReadFilter = 'all' | 'unread' | 'read'
 
 export interface NewsItem {
