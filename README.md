@@ -52,7 +52,8 @@ src/
     companies/    empresa ativa (seletor)
     home/         tela Início (calendário, notícias, documentos, CND)
     documents/    pastas, listagem, upload, download, exclusão, envio
-    requests/     portal do cliente: catálogo e solicitações
+    requests/     portal do cliente: catálogo, formulários por tipo, detalhe com histórico
+    service-desk/ escritório: fila de atendimento das solicitações (rota /atendimento)
     news/ cnd/    APIs de notícias e certidões
   lib/            cliente Axios, query client, formatadores, utilitários
   mocks/          dados simulados usados enquanto a API não existe
@@ -84,6 +85,17 @@ A API usa nomes em português; os DTOs estão em `src/types/dto.ts` e cada `api.
 | GET | `/empresas/{id}/documentos/{docId}/download` · POST `/empresas/{id}/documentos/download` | download (zip se vários) | integrado |
 | POST | `/empresas/{id}/documentos/{docId}/lido` | marcar como lido | integrado |
 | DELETE | `/empresas/{id}/documentos/{docId}` | exclusão | integrado |
-| — | recuperação de senha, envio por e-mail, notícias, CND, solicitações | | simulado até a API existir |
+| GET | `/solicitacoes/tipos` | catálogo de tipos | integrado |
+| GET · POST | `/empresas/{id}/solicitacoes` (multipart `tipo`, `assunto`, `departamento`, `descricao`, `dados` JSON, `anexos[]`) | minhas solicitações / abrir | integrado |
+| GET | `/empresas/{id}/solicitacoes/{solId}` | detalhe com histórico e ações permitidas | integrado |
+| POST | `/empresas/{id}/solicitacoes/{solId}/comentarios` · `/status` | conversa e mudança de status | integrado |
+| PUT | `/empresas/{id}/solicitacoes/{solId}/atribuicao` | responsável e prazo (escritório) | integrado |
+| GET | `/solicitacoes` | fila de atendimento do escritório | integrado |
+| — | recuperação de senha, envio por e-mail, notícias, CND | | simulado até a API existir |
+
+### Solicitações de serviço
+
+- **Cliente** (`/portal`): escolhe o tipo no catálogo e preenche o formulário específico (cadastros de empregado/contribuinte/estagiário, férias, rescisão, afastamento, rubricas ou solicitação geral). A validação com Zod espelha a da API, e erros do servidor como `dados.cpf` aparecem no campo certo. Em "Minhas solicitações" acompanha o status, conversa com o escritório, anexa arquivos e pode cancelar.
+- **Escritório** (`/atendimento`, só administradores e colaboradores): fila de todas as empresas, ordenada pelo prazo, com abas (minhas, sem responsável, aguardando cliente) e filtros por empresa, tipo, departamento, responsável e atrasadas. No detalhe, muda o status (pedir informação ao cliente exige mensagem), atribui responsável e prazo.
 
 Erros seguem `ProblemDetails` (RFC 7807); a mensagem exibida vem de `errors`, `detail` ou `title`.

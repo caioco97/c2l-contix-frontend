@@ -1,5 +1,5 @@
 import { formatISO } from 'date-fns'
-import type { DocumentItem, NewsItem } from '@/types/domain'
+import type { DocumentItem, NewsItem, ServiceRequestDetail } from '@/types/domain'
 import { mockDocuments, mockNews, mockRequests } from './data'
 
 /**
@@ -15,7 +15,7 @@ const news = new Map<string, NewsItem[]>([
   ['c-1', structuredClone(mockNews)],
   ['c-2', structuredClone(mockNews).map((n) => ({ ...n, isRead: true }))],
 ])
-const requests = new Map([
+const requests = new Map<string, ServiceRequestDetail[]>([
   ['c-1', structuredClone(mockRequests)],
   ['c-2', []],
 ])
@@ -33,5 +33,6 @@ export const mockStore = {
     if (!requests.has(companyId)) requests.set(companyId, [])
     return requests.get(companyId)!
   },
+  allRequests: () => [...requests.values()].flat(),
   now: () => formatISO(new Date()),
 }

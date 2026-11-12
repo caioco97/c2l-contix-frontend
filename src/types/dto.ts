@@ -77,3 +77,87 @@ export interface VencimentoDto {
   caminhoPasta: string
   lido: boolean
 }
+
+/* ---------- Solicitações de serviço ---------- */
+
+export type StatusSolicitacaoDto = 'Aberta' | 'EmAnalise' | 'AguardandoCliente' | 'Concluida' | 'Cancelada'
+export type DepartamentoDto = 'Contabil' | 'Fiscal' | 'Pessoal' | 'Societario' | 'Financeiro'
+export type TipoSolicitacaoCodigo =
+  | 'Geral'
+  | 'CadastroEmpregado'
+  | 'CadastroContribuinte'
+  | 'CadastroEstagiario'
+  | 'AvisoFerias'
+  | 'CalculoFerias'
+  | 'AvisoRescisao'
+  | 'CalculoRescisao'
+  | 'Afastamento'
+  | 'LancamentoRubricas'
+
+export interface TipoSolicitacaoDto {
+  codigo: TipoSolicitacaoCodigo
+  nome: string
+  descricao: string
+  departamento: DepartamentoDto
+  prazoDias: number
+  exigeAnexo: boolean
+  orientacaoAnexo: string | null
+}
+
+export interface SolicitacaoResumoDto {
+  id: string
+  numero: number
+  empresaId: string
+  empresaNome: string
+  tipo: TipoSolicitacaoCodigo
+  tipoNome: string
+  assunto: string
+  departamento: DepartamentoDto
+  status: StatusSolicitacaoDto
+  solicitanteId: string
+  solicitanteNome: string
+  responsavelId: string | null
+  responsavelNome: string | null
+  prazo: string | null
+  atrasada: boolean
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface AnexoDto {
+  id: string
+  nomeArquivo: string
+  contentType: string
+  tamanhoBytes: number
+  enviadoPorNome: string
+  createdAt: string
+}
+
+export interface InteracaoDto {
+  id: string
+  tipo: 'Abertura' | 'Comentario' | 'MudancaStatus' | 'Atribuicao'
+  mensagem: string | null
+  statusAnterior: StatusSolicitacaoDto | null
+  statusNovo: StatusSolicitacaoDto | null
+  autorId: string
+  autorNome: string
+  autorEhEscritorio: boolean
+  createdAt: string
+  anexos: AnexoDto[]
+}
+
+export interface SolicitacaoDto extends SolicitacaoResumoDto {
+  descricao: string | null
+  dados: Record<string, unknown> | null
+  finalizadaEm: string | null
+  transicoesPermitidas: StatusSolicitacaoDto[]
+  historico: InteracaoDto[]
+}
+
+export interface UsuarioResumoDto {
+  id: string
+  nome: string
+  email: string
+  perfil: PerfilDto
+  ativo: boolean
+}

@@ -5,7 +5,7 @@ import type {
   DocumentFolder,
   DocumentItem,
   NewsItem,
-  ServiceRequest,
+  ServiceRequestDetail,
   ServiceRequestType,
 } from '@/types/domain'
 import type { CurrentUser } from '@/types/auth'
@@ -186,48 +186,56 @@ export const mockCnds: Cnd[] = [
 ]
 
 export const mockRequestTypes: ServiceRequestType[] = [
-  { id: 'rt-1', code: 'general', name: 'Solicitação Geral', group: 'service', description: 'Peça qualquer serviço ao escritório.' },
-  { id: 'rt-2', code: 'employee', name: 'Cadastro de Empregado', group: 'service', description: 'Envie os dados de admissão de um novo empregado.' },
-  { id: 'rt-3', code: 'taxpayer', name: 'Cadastro de Contribuinte', group: 'service', description: 'Cadastre pró-labore ou autônomo.' },
-  { id: 'rt-4', code: 'intern', name: 'Cadastro de Estagiário', group: 'service', description: 'Envie os dados do contrato de estágio.' },
-  { id: 'rt-5', code: 'vacation-notice', name: 'Aviso Prévio de Férias', group: 'service', description: 'Programe as férias de um empregado.' },
-  { id: 'rt-6', code: 'vacation-calc', name: 'Cálculo de Férias', group: 'service', description: 'Solicite o cálculo de férias.' },
-  { id: 'rt-7', code: 'termination-notice', name: 'Aviso Prévio de Rescisão', group: 'service', description: 'Comunique o desligamento de um empregado.' },
-  { id: 'rt-8', code: 'termination-calc', name: 'Cálculo de Rescisão', group: 'service', description: 'Solicite o cálculo das verbas rescisórias.' },
-  { id: 'rt-9', code: 'leave', name: 'Afastamento de Empregado', group: 'service', description: 'Informe atestados e afastamentos.' },
-  { id: 'rt-10', code: 'payroll-items', name: 'Lançamento de Rubricas', group: 'service', description: 'Informe horas extras, faltas e comissões do mês.' },
-  { id: 'rt-11', code: 'nfe', name: 'Manifestação de NF-e', group: 'nfe', description: 'Confirme ou desconheça notas emitidas contra seu CNPJ.' },
+  { code: 'Geral', name: 'Solicitação Geral', description: 'Peça qualquer serviço ao escritório que não esteja no catálogo.', department: 'Contabil', deadlineDays: 5, requiresAttachment: false, attachmentHint: null },
+  { code: 'CadastroEmpregado', name: 'Cadastro de Empregado', description: 'Envie os dados de admissão de um novo empregado.', department: 'Pessoal', deadlineDays: 3, requiresAttachment: true, attachmentHint: 'Anexe RG, CPF, CTPS, comprovante de residência e exame admissional.' },
+  { code: 'CadastroContribuinte', name: 'Cadastro de Contribuinte', description: 'Cadastre sócios (pró-labore) ou autônomos para recolhimento.', department: 'Pessoal', deadlineDays: 3, requiresAttachment: true, attachmentHint: 'Anexe RG, CPF e comprovante de residência.' },
+  { code: 'CadastroEstagiario', name: 'Cadastro de Estagiário', description: 'Envie os dados para o termo de compromisso de estágio.', department: 'Pessoal', deadlineDays: 3, requiresAttachment: true, attachmentHint: 'Anexe RG, CPF, comprovante de matrícula e termo de compromisso, se houver.' },
+  { code: 'AvisoFerias', name: 'Aviso Prévio de Férias', description: 'Informe as férias de um empregado para emissão do aviso.', department: 'Pessoal', deadlineDays: 5, requiresAttachment: false, attachmentHint: null },
+  { code: 'CalculoFerias', name: 'Cálculo de Férias', description: 'Solicite o cálculo e o recibo de férias de um empregado.', department: 'Pessoal', deadlineDays: 3, requiresAttachment: false, attachmentHint: null },
+  { code: 'AvisoRescisao', name: 'Aviso Prévio de Rescisão', description: 'Informe o desligamento de um empregado para emissão do aviso prévio.', department: 'Pessoal', deadlineDays: 2, requiresAttachment: false, attachmentHint: null },
+  { code: 'CalculoRescisao', name: 'Cálculo de Rescisão', description: 'Solicite o cálculo das verbas rescisórias de um empregado.', department: 'Pessoal', deadlineDays: 3, requiresAttachment: false, attachmentHint: null },
+  { code: 'Afastamento', name: 'Afastamento de Empregado', description: 'Informe afastamentos por doença, acidente, licenças e outros.', department: 'Pessoal', deadlineDays: 2, requiresAttachment: true, attachmentHint: 'Anexe o atestado ou documento que comprove o afastamento.' },
+  { code: 'LancamentoRubricas', name: 'Lançamento de Rubricas', description: 'Informe horas extras, faltas, comissões e outros eventos da folha.', department: 'Pessoal', deadlineDays: 5, requiresAttachment: false, attachmentHint: null },
 ]
 
-export const mockRequests: ServiceRequest[] = [
-  {
-    id: 'sr-1',
-    number: 1042,
-    typeName: 'Cálculo de Férias',
-    subject: 'Férias de João Pereira (dezembro)',
-    department: 'Pessoal',
-    status: 'InAnalysis',
-    createdAt: d(-2),
-    updatedAt: d(-1),
-  },
-  {
-    id: 'sr-2',
-    number: 1038,
-    typeName: 'Solicitação Geral',
-    subject: 'Segunda via do contrato social',
-    department: 'Societário',
-    status: 'WaitingClient',
-    createdAt: d(-7),
-    updatedAt: d(-4),
-  },
-  {
-    id: 'sr-3',
-    number: 1021,
-    typeName: 'Cadastro de Empregado',
-    subject: 'Admissão de Ana Martins',
-    department: 'Pessoal',
-    status: 'Done',
-    createdAt: d(-20),
-    updatedAt: d(-15),
-  },
+function mockRequest(r: Pick<ServiceRequestDetail, 'id' | 'number' | 'typeCode' | 'subject' | 'department' | 'status'> &
+  Partial<ServiceRequestDetail> & { daysAgo: number }): ServiceRequestDetail {
+  const type = mockRequestTypes.find((t) => t.code === r.typeCode)!
+  const createdAt = d(-r.daysAgo)
+  return {
+    companyId: 'c-1',
+    companyName: 'Padaria Pão Quente',
+    typeName: type.name,
+    requesterName: 'Cliente Demo',
+    assigneeId: null,
+    assigneeName: null,
+    dueDate: d(-r.daysAgo + type.deadlineDays).slice(0, 10),
+    isOverdue: false,
+    createdAt,
+    updatedAt: createdAt,
+    description: null,
+    data: null,
+    closedAt: null,
+    allowedTransitions: r.status === 'Open' || r.status === 'WaitingClient' ? ['Canceled'] : [],
+    history: [
+      { id: `${r.id}-h1`, kind: 'opened', message: r.description ?? null, fromStatus: null, toStatus: 'Open', authorName: 'Cliente Demo', authorIsOffice: false, createdAt, attachments: [] },
+    ],
+    ...r,
+  }
+}
+
+export const mockRequests: ServiceRequestDetail[] = [
+  mockRequest({
+    id: 'sr-1', number: 3, typeCode: 'CalculoFerias', subject: 'Cálculo de Férias - João Pereira', department: 'Pessoal',
+    status: 'InAnalysis', daysAgo: 2, assigneeId: 'u-1', assigneeName: 'Carla Mendes',
+    data: { empregado: 'João Pereira', periodoAquisitivoInicio: '2025-01-02', periodoAquisitivoFim: '2026-01-01', dataInicio: '2026-12-01', dias: 30, abonoPecuniario: false, adiantamento13: true },
+  }),
+  mockRequest({
+    id: 'sr-2', number: 2, typeCode: 'Geral', subject: 'Segunda via do contrato social', department: 'Societario',
+    status: 'WaitingClient', daysAgo: 7, description: 'Precisamos da segunda via para o banco.',
+  }),
+  mockRequest({
+    id: 'sr-3', number: 1, typeCode: 'CadastroEmpregado', subject: 'Cadastro de Empregado - Ana Martins', department: 'Pessoal',
+    status: 'Done', daysAgo: 20,
+  }),
 ]

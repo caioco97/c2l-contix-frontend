@@ -1,20 +1,34 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { Inbox, Plus } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Skeleton, Table, TBody, Td, Th, THead, Tr } from '@/components/ui'
+import { Button, Card, EmptyState, Skeleton, Tabs } from '@/components/ui'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
-import { formatDate } from '@/lib/format'
-import { requestKeys, requestsApi } from '../api'
-import { statusMeta } from '../meta'
+import { requestKeys, requestsApi, type RequestFilters } from '../api'
+import { Pager, RequestsTable } from '../components/RequestsTable'
+
+type View = 'open' | 'waiting' | 'all'
+const PAGE_SIZE = 15
 
 export function MyRequestsPage() {
   const { company } = useActiveCompany()
   const companyId = company?.id ?? ''
-  const { data = [], isLoading } = useQuery({
-    queryKey: requestKeys.list(companyId),
-    queryFn: () => requestsApi.list(companyId),
+  const [view, setView] = useState<View>('open')
+  const [page, setPage] = useState(1)
+
+  const filters: RequestFilters = {
+    inProgress: view === 'open' || undefined,
+    status: view === 'waiting' ? 'WaitingClient' : undefined,
+    page,
+    pageSize: PAGE_SIZE,
+  }
+  const { data, isLoading } = useQuery({
+    queryKey: requestKeys.list(companyId, filters),
+    queryFn: () => requestsApi.list(companyId, filters),
     enabled: !!companyId,
+    placeholderData: keepPreviousData,
   })
+  const items = data?.items ?? []
 
   return (
     <div className="space-y-4">
@@ -27,43 +41,36 @@ export function MyRequestsPage() {
           </Button>
         </Link>
       </div>
+      <Tabs
+        items={[
+          { value: 'open', label: 'Em andamento' },
+          { value: 'waiting', label: 'Aguardando você' },
+          { value: 'all', label: 'Todas' },
+        ]}
+        value={view}
+        onChange={(v) => {
+          setView(v)
+          setPage(1)
+        }}
+      />
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="space-y-2 p-4">
             <Skeleton className="h-8" />
             <Skeleton className="h-8" />
           </div>
-        ) : data.length === 0 ? (
+        ) : items.length === 0 ? (
           <div className="p-6">
-            <EmptyState icon={<Inbox className="h-8 w-8" />} title="Nenhuma solicitação aberta para esta empresa." />
+            <EmptyState
+              icon={<Inbox className="h-8 w-8" />}
+              title={view === 'waiting' ? 'Nada aguardando você.' : 'Nenhuma solicitação para esta empresa.'}
+            />
           </div>
         ) : (
-          <Table>
-            <THead>
-              <tr>
-                <Th>Nº</Th>
-                <Th>Assunto</Th>
-                <Th>Tipo</Th>
-                <Th>Departamento</Th>
-                <Th>Status</Th>
-                <Th>Atualizada</Th>
-              </tr>
-            </THead>
-            <TBody>
-              {data.map((r) => (
-                <Tr key={r.id}>
-                  <Td className="font-mono text-xs text-slate-500">#{r.number}</Td>
-                  <Td className="font-medium text-ink">{r.subject}</Td>
-                  <Td>{r.typeName}</Td>
-                  <Td>{r.department}</Td>
-                  <Td>
-                    <Badge tone={statusMeta[r.status].tone}>{statusMeta[r.status].label}</Badge>
-                  </Td>
-                  <Td className="whitespace-nowrap">{formatDate(r.updatedAt)}</Td>
-                </Tr>
-              ))}
-            </TBody>
-          </Table>
+          <>
+            <RequestsTable items={items} hrefOf={(r) => `/portal/solicitacoes/${r.id}`} />
+            <Pager page={page} total={data?.total ?? 0} pageSize={PAGE_SIZE} onPage={setPage} />
+          </>
         )}
       </Card>
     </div>

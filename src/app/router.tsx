@@ -4,10 +4,15 @@ import { GuestOnly, RequireAuth } from '@/features/auth/components/RequireAuth'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
+import { Spinner } from '@/components/ui'
 import { NotFoundPage } from './NotFoundPage'
 
 // Telas autenticadas são carregadas sob demanda (code splitting por rota).
 export const router = createBrowserRouter([
+  {
+    // Exibido enquanto a primeira rota lazy carrega.
+    hydrateFallbackElement: <Spinner className="py-20" />,
+    children: [
   {
     element: <GuestOnly />,
     children: [
@@ -40,6 +45,10 @@ export const router = createBrowserRouter([
                 lazy: () => import('@/features/requests/pages/MyRequestsPage').then((m) => ({ Component: m.MyRequestsPage })),
               },
               {
+                path: 'solicitacoes/:requestId',
+                lazy: () => import('@/features/requests/pages/PortalRequestPage').then((m) => ({ Component: m.PortalRequestPage })),
+              },
+              {
                 path: 'solicitacoes/nova/:typeCode',
                 lazy: () => import('@/features/requests/pages/NewRequestPage').then((m) => ({ Component: m.NewRequestPage })),
               },
@@ -59,9 +68,25 @@ export const router = createBrowserRouter([
               },
             ],
           },
+          {
+            element: <RequireAuth roles={['Admin', 'Collaborator']} />,
+            children: [
+              {
+                path: 'atendimento',
+                lazy: () => import('@/features/service-desk/ServiceDeskPage').then((m) => ({ Component: m.ServiceDeskPage })),
+              },
+              {
+                path: 'atendimento/:companyId/:requestId',
+                lazy: () =>
+                  import('@/features/service-desk/ServiceDeskRequestPage').then((m) => ({ Component: m.ServiceDeskRequestPage })),
+              },
+            ],
+          },
           { path: '*', element: <NotFoundPage /> },
         ],
       },
+    ],
+  },
     ],
   },
 ])
