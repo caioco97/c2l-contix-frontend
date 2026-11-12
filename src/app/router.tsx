@@ -33,6 +33,10 @@ export const router = createBrowserRouter([
             lazy: () => import('@/features/documents/DocumentsPage').then((m) => ({ Component: m.DocumentsPage })),
           },
           {
+            path: 'certidoes',
+            lazy: () => import('@/features/cnd/CndPage').then((m) => ({ Component: m.CndPage })),
+          },
+          {
             path: 'portal',
             lazy: () => import('@/features/requests/pages/PortalLayout').then((m) => ({ Component: m.PortalLayout })),
             children: [
@@ -71,6 +75,10 @@ export const router = createBrowserRouter([
           {
             element: <RequireAuth roles={['Admin', 'Collaborator']} />,
             children: [
+              {
+                path: 'noticias',
+                lazy: () => import('@/features/news/NewsAdminPage').then((m) => ({ Component: m.NewsAdminPage })),
+              },
               {
                 path: 'atendimento',
                 lazy: () => import('@/features/service-desk/ServiceDeskPage').then((m) => ({ Component: m.ServiceDeskPage })),
