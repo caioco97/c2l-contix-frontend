@@ -122,7 +122,8 @@ export const documentsApi = {
 
   async list(companyId: string, q: DocumentQuery): Promise<PagedResult<DocumentItem>> {
     if (env.useMocks) {
-      const folderIds = q.folderId ? collectFolderIds(mockFolders, q.folderId) : null
+      // Igual à API: só a pasta exata, sem subpastas.
+      const folderIds = q.folderId ? [q.folderId] : null
       const term = q.search.trim().toLowerCase()
       const items = mockStore
         .documents(companyId)
@@ -202,7 +203,7 @@ export const documentsApi = {
     return data.items
   },
 
-  /** Baixa um ou mais documentos (vários vêm em .zip) e marca como lidos. */
+  /** Baixa um ou mais documentos (vários vêm em .zip); o servidor já marca como lidos. */
   async download(companyId: string, ids: string[]): Promise<{ blob: Blob; fileName: string }> {
     if (env.useMocks) {
       const docs = mockStore.documents(companyId).filter((d) => ids.includes(d.id))
@@ -217,11 +218,19 @@ export const documentsApi = {
       ids.length === 1
         ? await api.get(`/empresas/${companyId}/documentos/${ids[0]}/download`, { responseType: 'blob' })
         : await api.post(`/empresas/${companyId}/documentos/download`, { documentoIds: ids }, { responseType: 'blob' })
-    // Registra a leitura (idempotente) caso o download não o faça no servidor.
-    await Promise.allSettled(ids.map((id) => api.post(`/empresas/${companyId}/documentos/${id}/lido`)))
     const disposition = String(res.headers['content-disposition'] ?? '')
     const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)
     return { blob: res.data as Blob, fileName: match ? decodeURIComponent(match[1]) : 'documentos.zip' }
+  },
+
+  /** Marca como lido sem baixar (o download já marca no servidor). */
+  async markAsRead(companyId: string, id: string): Promise<void> {
+    if (env.useMocks) {
+      const doc = mockStore.documents(companyId).find((d) => d.id === id)
+      if (doc) doc.isRead = true
+      return mockDelay(undefined, 150)
+    }
+    await api.post(`/empresas/${companyId}/documentos/${id}/lido`)
   },
 
   async remove(companyId: string, ids: string[]): Promise<void> {
