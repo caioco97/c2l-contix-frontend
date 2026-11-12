@@ -4,7 +4,7 @@ import type {
   Company,
   DocumentFolder,
   DocumentItem,
-  NewsItem,
+  NewsDetail,
   ServiceRequestDetail,
   ServiceRequestType,
 } from '@/types/domain'
@@ -154,35 +154,79 @@ export const mockDocuments: DocumentItem[] = [
   },
 ]
 
-export const mockNews: NewsItem[] = [
+const ymd = (offset: number) => formatISO(addDays(today, offset), { representation: 'date' })
+
+export const mockNews: NewsDetail[] = [
   {
     id: 'n-1',
     title: 'Prazo da DCTFWeb de outubro',
     summary: 'A guia vence dia 20. Confira na pasta Pessoal/DARF DCTFWeb e evite multa por atraso.',
+    content:
+      'A guia da DCTFWeb de outubro vence no dia 20.\n\nEla já está disponível na pasta Pessoal/DARF DCTFWeb. ' +
+      'Pagamentos após o vencimento têm multa de 0,33% ao dia, limitada a 20%, mais juros Selic.',
     publishedAt: d(-1),
     isRead: false,
+    hasImage: false,
+    attachmentCount: 0,
+    attachments: [],
   },
   {
     id: 'n-2',
     title: 'Reforma tributária: o que muda em 2027',
     summary: 'Preparamos um resumo sobre CBS e IBS e os primeiros impactos para empresas do Simples Nacional.',
+    content:
+      'A partir de 2027 começa a transição para a CBS e o IBS.\n\nPreparamos um resumo com os principais pontos de ' +
+      'atenção para empresas do Simples Nacional. Em breve entraremos em contato para agendar uma conversa.',
     publishedAt: d(-5),
     isRead: false,
+    hasImage: false,
+    attachmentCount: 1,
+    attachments: [{ id: 'na-1', fileName: 'Resumo reforma tributária.pdf', sizeBytes: 182_000 }],
   },
   {
     id: 'n-3',
     title: 'Horário de atendimento no feriado',
     summary: 'No dia 20/11 o escritório funcionará em regime de plantão, das 9h às 13h.',
+    content: 'No dia 20/11 o escritório funcionará em regime de plantão, das 9h às 13h.',
     publishedAt: d(-12),
     isRead: true,
+    hasImage: false,
+    attachmentCount: 0,
+    attachments: [],
   },
 ]
 
+const cnd = (
+  id: string,
+  type: Cnd['type'],
+  typeName: string,
+  situation: Cnd['situation'],
+  issued: number,
+  valid: number,
+): Cnd => ({
+  id,
+  companyId: 'c-1',
+  companyName: 'Empresa Demo',
+  type,
+  typeName,
+  situation,
+  number: null,
+  issuedAt: ymd(issued),
+  validUntil: ymd(valid),
+  daysToExpire: valid,
+  status: valid < 0 ? 'Expired' : situation === 'Positiva' ? 'Irregular' : valid <= 30 ? 'Expiring' : 'Regular',
+  isCurrent: true,
+  notes: null,
+  hasFile: true,
+  fileName: `${typeName}.pdf`,
+  sizeBytes: 95_000,
+})
+
 export const mockCnds: Cnd[] = [
-  { id: 'cnd-1', type: 'Federal (RFB/PGFN)', status: 'Regular', issuedAt: d(-60), validUntil: d(120) },
-  { id: 'cnd-2', type: 'FGTS', status: 'Expiring', issuedAt: d(-25), validUntil: d(5) },
-  { id: 'cnd-3', type: 'Estadual', status: 'Regular', issuedAt: d(-20), validUntil: d(70) },
-  { id: 'cnd-4', type: 'Trabalhista (CNDT)', status: 'Expired', issuedAt: d(-200), validUntil: d(-20) },
+  cnd('cnd-1', 'FederalPgfn', 'Federal (RFB/PGFN)', 'Negativa', -60, 120),
+  cnd('cnd-2', 'Fgts', 'FGTS (CRF)', 'Negativa', -25, 5),
+  cnd('cnd-3', 'Estadual', 'Estadual', 'PositivaComEfeitoNegativa', -20, 70),
+  cnd('cnd-4', 'Trabalhista', 'Trabalhista (CNDT)', 'Negativa', -200, -20),
 ]
 
 export const mockRequestTypes: ServiceRequestType[] = [

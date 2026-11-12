@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BellRing, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Menu, UserRound, X } from 'lucide-react'
+import { BellRing, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
 import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
@@ -10,9 +10,11 @@ import { Logo } from './Logo'
 const NAV = [
   { to: '/', label: 'Início', icon: Home, end: true },
   { to: '/documentos', label: 'Documentos', icon: FolderOpen },
+  { to: '/certidoes', label: 'CND', icon: ShieldCheck },
   { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid },
   /** Só para o escritório (administrador e colaborador). */
   { to: '/atendimento', label: 'Atendimento', icon: Headset, officeOnly: true },
+  { to: '/noticias', label: 'Notícias', icon: Megaphone, officeOnly: true },
 ]
 
 export function AppHeader() {

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Megaphone } from 'lucide-react'
-import { Card, CardBody, CardHeader, EmptyState, Modal, Skeleton, Tabs } from '@/components/ui'
+import { Megaphone, Paperclip } from 'lucide-react'
+import { Card, CardBody, CardHeader, EmptyState, Skeleton, Tabs } from '@/components/ui'
 import { newsApi, newsKeys } from '@/features/news/api'
 import { formatDate } from '@/lib/format'
+import { NewsReaderModal } from '@/features/news/components/NewsReaderModal'
 import type { NewsItem } from '@/types/domain'
 
 type Tab = 'unread' | 'read'
@@ -65,7 +66,15 @@ export function NewsCard({ companyId }: { companyId: string }) {
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-ink">{n.title}</span>
                     <span className="line-clamp-2 text-xs text-slate-500">{n.summary}</span>
-                    <span className="mt-1 block text-xs text-slate-400">{formatDate(n.publishedAt)}</span>
+                    <span className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+                      {formatDate(n.publishedAt)}
+                      {n.attachmentCount > 0 && (
+                        <span className="inline-flex items-center gap-0.5" aria-label={`${n.attachmentCount} anexo(s)`}>
+                          <Paperclip className="h-3 w-3" />
+                          {n.attachmentCount}
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </button>
               </li>
@@ -73,9 +82,7 @@ export function NewsCard({ companyId }: { companyId: string }) {
           </ul>
         )}
       </CardBody>
-      <Modal open={!!open} onClose={() => setOpen(null)} title={open?.title ?? ''} description={open ? formatDate(open.publishedAt) : ''}>
-        <p className="text-sm leading-relaxed text-slate-700">{open?.summary}</p>
-      </Modal>
+      <NewsReaderModal companyId={companyId} item={open} onClose={() => setOpen(null)} />
     </Card>
   )
 }

@@ -184,3 +184,113 @@ export interface PreferenciaNotificacaoDto {
   descricao: string
   receberEmail: boolean
 }
+
+/* ---------- Notícias ---------- */
+
+export type SituacaoNoticiaDto = 'Agendada' | 'Publicada' | 'Expirada'
+export type PublicoNoticiaDto = 'Todos' | 'EmpresasSelecionadas' | 'RegimeTributario'
+export type RegimeTributarioDto = 'SimplesNacional' | 'LucroPresumido' | 'LucroReal' | 'MEI' | 'Imune' | 'Isento' | 'Outro'
+
+export interface NoticiaAnexoDto {
+  id: string
+  nomeArquivo: string
+  contentType: string
+  tamanhoBytes: number
+}
+
+export interface NoticiaPortalDto {
+  id: string
+  titulo: string
+  resumo: string
+  publicadaEm: string
+  possuiImagem: boolean
+  quantidadeAnexos: number
+  lida: boolean
+  lidaEm: string | null
+}
+
+export interface NoticiaPortalDetalheDto extends Omit<NoticiaPortalDto, 'quantidadeAnexos'> {
+  conteudo: string
+  anexos: NoticiaAnexoDto[]
+}
+
+export interface NoticiaResumoDto {
+  id: string
+  titulo: string
+  resumo: string
+  publicarEm: string
+  expiraEm: string | null
+  situacao: SituacaoNoticiaDto
+  publico: PublicoNoticiaDto
+  possuiImagem: boolean
+  quantidadeAnexos: number
+  autorNome: string
+  empresasDestinatarias: number
+  empresasLeram: number
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface NoticiaDto {
+  id: string
+  titulo: string
+  resumo: string | null
+  conteudo: string
+  publicarEm: string
+  expiraEm: string | null
+  situacao: SituacaoNoticiaDto
+  publico: PublicoNoticiaDto
+  regimes: RegimeTributarioDto[]
+  empresas: { id: string; nome: string }[]
+  possuiImagem: boolean
+  anexos: NoticiaAnexoDto[]
+  autorId: string
+  autorNome: string
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface LeituraNoticiaDto {
+  empresaId: string
+  empresaNome: string
+  lida: boolean
+  primeiraLeituraEm: string | null
+  leitores: number
+}
+
+/* ---------- Certidões ---------- */
+
+export type TipoCertidaoDto = 'FederalPgfn' | 'Estadual' | 'Municipal' | 'Fgts' | 'Trabalhista'
+export type SituacaoCertidaoDto = 'Negativa' | 'PositivaComEfeitoNegativa' | 'Positiva'
+export type ValidadeCertidaoDto = 'Vigente' | 'AVencer' | 'Vencida'
+
+export interface CertidaoDto {
+  id: string
+  empresaId: string
+  empresaNome: string
+  tipo: TipoCertidaoDto
+  tipoNome: string
+  situacao: SituacaoCertidaoDto
+  numero: string | null
+  emissao: string
+  validade: string
+  statusValidade: ValidadeCertidaoDto
+  diasParaVencer: number
+  regular: boolean
+  atual: boolean
+  observacao: string | null
+  possuiArquivo: boolean
+  nomeArquivo: string | null
+  tamanhoBytes: number | null
+  cadastradoPorNome: string
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface PainelCertidoesDto {
+  vencidas: number
+  aVencer15Dias: number
+  aVencer30Dias: number
+  irregulares: number
+  itens: CertidaoDto[]
+}
