@@ -6,9 +6,6 @@ import type { CurrentUser, LoginRequest, LoginResponse } from '@/types/auth'
 import type { LoginResponseDto, UsuarioDto } from '@/types/dto'
 import { toCurrentUser, toTokens } from './mappers'
 
-/** Recuperação de senha ainda não existe na API: segue simulada. */
-const PASSWORD_RESET_MOCK = true
-
 function fakeTokens() {
   return {
     accessToken: `mock-access-${crypto.randomUUID()}`,
@@ -39,12 +36,15 @@ export const authApi = {
   },
 
   async forgotPassword(email: string): Promise<void> {
-    if (env.useMocks || PASSWORD_RESET_MOCK) return mockDelay(undefined, 600)
-    await api.post('/auth/forgot-password', { email })
+    if (env.useMocks) return mockDelay(undefined, 600)
+    await api.post('/auth/esqueci-senha', { email })
   },
 
   async resetPassword(body: { token: string; password: string }): Promise<void> {
-    if (env.useMocks || PASSWORD_RESET_MOCK) return mockDelay(undefined, 600)
-    await api.post('/auth/reset-password', { token: body.token, novaSenha: body.password })
+    if (env.useMocks) {
+      if (body.token === 'expirado') return mockError(422, 'Link de redefinição inválido ou expirado. Solicite um novo link.')
+      return mockDelay(undefined, 600)
+    }
+    await api.post('/auth/redefinir-senha', { token: body.token, novaSenha: body.password })
   },
 }

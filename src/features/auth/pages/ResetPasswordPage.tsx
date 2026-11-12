@@ -43,11 +43,14 @@ export function ResetPasswordPage() {
   })
 
   return (
-    <AuthLayout title="Criar nova senha" subtitle="Use pelo menos 8 caracteres, com uma letra maiúscula e um número.">
+    <AuthLayout title="Criar nova senha" subtitle="Use pelo menos 8 caracteres, com letras maiúsculas, minúsculas e um número.">
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         {serverError && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {serverError}
+            {serverError}{' '}
+            <Link to="/esqueci-senha" className="font-medium underline">
+              Solicitar um novo link
+            </Link>
           </div>
         )}
         <FormField label="Nova senha" htmlFor="password" error={errors.password?.message}>

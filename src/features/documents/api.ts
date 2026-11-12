@@ -276,9 +276,14 @@ export const documentsApi = {
     })
   },
 
-  /** Envio por e-mail ainda não existe na API: segue simulado. */
-  async send(_companyId: string, _input: { ids: string[]; message: string }): Promise<void> {
-    return mockDelay(undefined, 500)
+  /** Avisa os usuários da empresa por e-mail e notificação (link para o portal, sem anexo). Retorna quantos foram avisados. */
+  async send(companyId: string, input: { ids: string[]; message: string }): Promise<number> {
+    if (env.useMocks) return mockDelay(1, 500)
+    const { data } = await api.post<{ destinatarios: number }>(`/empresas/${companyId}/documentos/enviar`, {
+      documentoIds: input.ids,
+      mensagem: input.message.trim() || null,
+    })
+    return data.destinatarios
   },
 }
 

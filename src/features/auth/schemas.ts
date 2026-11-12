@@ -18,6 +18,7 @@ export const resetPasswordSchema = z
       .string()
       .min(8, 'A senha deve ter pelo menos 8 caracteres.')
       .regex(/[A-Z]/, 'Inclua pelo menos uma letra maiúscula.')
+      .regex(/[a-z]/, 'Inclua pelo menos uma letra minúscula.')
       .regex(/[0-9]/, 'Inclua pelo menos um número.'),
     confirmPassword: z.string(),
   })

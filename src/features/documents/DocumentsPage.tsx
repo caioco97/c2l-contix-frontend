@@ -138,8 +138,8 @@ export function DocumentsPage() {
 
   const send = async (message: string) => {
     try {
-      await documentsApi.send(companyId, { ids: [...selected], message })
-      toast.success('Documentos enviados por e-mail.')
+      const total = await documentsApi.send(companyId, { ids: [...selected], message })
+      toast.success(total === 1 ? 'Documentos enviados para 1 usuário.' : `Documentos enviados para ${total} usuários.`)
       setModal(null)
     } catch (e) {
       toast.error(getErrorMessage(e))
