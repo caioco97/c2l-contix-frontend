@@ -65,6 +65,7 @@ function toFolder(dto: PastaDto): DocumentFolder {
     name: dto.nome,
     parentId: dto.pastaPaiId,
     unreadCount: dto.documentosNaoLidos,
+    clientCanUpload: dto.permiteUploadCliente,
     children: dto.subpastas?.length
       ? [...dto.subpastas].sort((a, b) => a.ordem - b.ordem).map(toFolder)
       : undefined,

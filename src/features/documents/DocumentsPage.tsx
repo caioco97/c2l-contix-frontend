@@ -21,6 +21,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
+import { useAuth } from '@/features/auth/AuthContext'
 import { CompanySwitcher } from '@/features/companies/CompanySwitcher'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/cn'
@@ -59,6 +60,7 @@ export function DocumentsPage() {
   const queryClient = useQueryClient()
   const toast = useToast()
   const companyId = company?.id ?? ''
+  const { user } = useAuth()
 
   const [filter, setFilter] = useState<ReadFilter>('all')
   const [search, setSearch] = useState('')
@@ -163,6 +165,8 @@ export function DocumentsPage() {
     })
 
   const hasSelection = selected.size > 0
+  // O cliente só envia para pastas liberadas pelo escritório (nos mocks a flag não existe: libera).
+  const canUpload = !!current && (user?.role !== 'Client' || current.folder.clientCanUpload !== false)
   const sortProps = (field: DocumentSortField) => ({
     active: sortBy === field,
     direction: sortDir,
@@ -193,7 +197,13 @@ export function DocumentsPage() {
         <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white">
           {/* Barra de ações */}
           <div className="flex flex-wrap items-center gap-2 bg-brand-800 px-3 py-2.5">
-            <Button variant="onDark" size="sm" onClick={() => setModal('upload')} disabled={!current}>
+            <Button
+              variant="onDark"
+              size="sm"
+              onClick={() => setModal('upload')}
+              disabled={!canUpload}
+              title={current && !canUpload ? 'O escritório não liberou envio de arquivos nesta pasta.' : undefined}
+            >
               <CirclePlus className="h-4 w-4" />
               Adicionar
             </Button>
