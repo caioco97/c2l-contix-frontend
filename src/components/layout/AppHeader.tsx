@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Bell, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Menu, UserRound, X } from 'lucide-react'
+import { BellRing, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Menu, UserRound, X } from 'lucide-react'
 import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
+import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { Logo } from './Logo'
 
 const NAV = [
@@ -68,10 +69,7 @@ export function AppHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1 md:ml-0">
-          <Button variant="ghost" size="icon" aria-label="Notificações" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500" />
-          </Button>
+          <NotificationBell />
           <Button variant="ghost" size="icon" aria-label="Ajuda" className="hidden sm:inline-flex">
             <CircleHelp className="h-5 w-5" />
           </Button>
@@ -103,6 +101,15 @@ export function AppHeader() {
                   </div>
                   <MenuItem icon={<UserRound className="h-4 w-4" />} onClick={close}>
                     Meu perfil
+                  </MenuItem>
+                  <MenuItem
+                    icon={<BellRing className="h-4 w-4" />}
+                    onClick={() => {
+                      close()
+                      navigate('/notificacoes')
+                    }}
+                  >
+                    Notificações
                   </MenuItem>
                   <MenuItem
                     icon={<LogOut className="h-4 w-4" />}

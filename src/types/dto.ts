@@ -161,3 +161,26 @@ export interface UsuarioResumoDto {
   perfil: PerfilDto
   ativo: boolean
 }
+
+/* ---------- Notificações ---------- */
+
+export type TipoNotificacaoDto = 'NovoDocumento' | 'VencimentoProximo' | 'NovaSolicitacao' | 'SolicitacaoAtualizada'
+
+export interface NotificacaoDto {
+  id: string
+  tipo: TipoNotificacaoDto
+  titulo: string
+  mensagem: string
+  link: string | null
+  empresaId: string | null
+  referenciaId: string | null
+  lida: boolean
+  lidaEm: string | null
+  criadaEm: string
+}
+
+export interface PreferenciaNotificacaoDto {
+  tipo: TipoNotificacaoDto
+  descricao: string
+  receberEmail: boolean
+}

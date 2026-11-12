@@ -33,6 +33,11 @@ export const router = createBrowserRouter([
             lazy: () => import('@/features/documents/DocumentsPage').then((m) => ({ Component: m.DocumentsPage })),
           },
           {
+            path: 'notificacoes',
+            lazy: () =>
+              import('@/features/notifications/NotificationsPage').then((m) => ({ Component: m.NotificationsPage })),
+          },
+          {
             path: 'portal',
             lazy: () => import('@/features/requests/pages/PortalLayout').then((m) => ({ Component: m.PortalLayout })),
             children: [

@@ -143,3 +143,26 @@ export interface OfficeUser {
   id: string
   name: string
 }
+
+/* ---------- Notificações ---------- */
+
+export type NotificationType = 'NewDocument' | 'DueSoon' | 'NewRequest' | 'RequestUpdated'
+
+export interface AppNotification {
+  id: string
+  type: NotificationType
+  title: string
+  message: string
+  /** Rota do app para abrir o item (ex.: /documentos/{pastaId}). */
+  link: string | null
+  /** Empresa do item: o app troca a empresa ativa antes de navegar. */
+  companyId: string | null
+  isRead: boolean
+  createdAt: string
+}
+
+export interface NotificationPreference {
+  type: NotificationType
+  label: string
+  email: boolean
+}
