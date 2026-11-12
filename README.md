@@ -54,7 +54,8 @@ src/
     documents/    pastas, listagem, upload, download, exclusão, envio
     requests/     portal do cliente: catálogo, formulários por tipo, detalhe com histórico
     service-desk/ escritório: fila de atendimento das solicitações (rota /atendimento)
-    news/ cnd/    APIs de notícias e certidões
+    news/         notícias: leitura no portal e gestão pelo escritório (rota /noticias)
+    cnd/          certidões: lista da empresa com download e painel de vencimentos (rota /certidoes)
   lib/            cliente Axios, query client, formatadores, utilitários
   mocks/          dados simulados usados enquanto a API não existe
   types/          tipos das telas (domain) e contratos da API (dto)
@@ -91,7 +92,16 @@ A API usa nomes em português; os DTOs estão em `src/types/dto.ts` e cada `api.
 | POST | `/empresas/{id}/solicitacoes/{solId}/comentarios` · `/status` | conversa e mudança de status | integrado |
 | PUT | `/empresas/{id}/solicitacoes/{solId}/atribuicao` | responsável e prazo (escritório) | integrado |
 | GET | `/solicitacoes` | fila de atendimento do escritório | integrado |
-| — | recuperação de senha, envio por e-mail, notícias, CND | | simulado até a API existir |
+| GET | `/empresas/{id}/noticias?status=NaoLidos\|Lidos` · `/{noticiaId}` · POST `/{noticiaId}/lida` | notícias no portal | integrado |
+| GET · POST · PUT · DELETE | `/noticias` (multipart com imagem e anexos) · GET `/noticias/{id}/leituras` | gestão e alcance (escritório) | integrado |
+| GET · POST · PUT · DELETE | `/empresas/{id}/certidoes` · GET `/{certidaoId}/download` | certidões da empresa | integrado |
+| GET | `/certidoes/painel?dias=` | vencidas e a vencer de todas as empresas (escritório) | integrado |
+| — | recuperação de senha, envio por e-mail | | simulado até a API existir |
+
+### Notícias e CND
+
+- **Notícias:** o cliente lê no cartão da tela Início (abas Não lidas/Lidas; abrir marca como lida), com imagem de capa e anexos. O escritório publica em `/noticias`: título, resumo, conteúdo, agendamento e expiração, público (todas, empresas selecionadas ou regime tributário), imagem e anexos, e vê quais empresas leram.
+- **CND:** cartão na tela Início e página `/certidoes` com a certidão atual de cada tipo (ou o histórico) e download. O escritório cadastra, edita, registra renovações e acompanha no painel as vencidas, a vencer em 15/30 dias e as positivas de todas as empresas.
 
 ### Solicitações de serviço
 
