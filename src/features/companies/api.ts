@@ -335,7 +335,10 @@ export const companiesApi = {
     }
     const form = new FormData()
     form.append('arquivo', file)
-    const { data } = await api.put<IdentidadeVisualDto>(`/empresas/${id}/identidade-visual/logo`, form)
+    // O cliente HTTP manda JSON por padrão: sem este cabeçalho o axios converte o FormData em JSON e a API responde 415.
+    const { data } = await api.put<IdentidadeVisualDto>(`/empresas/${id}/identidade-visual/logo`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
     return toBranding(data)
   },
 
