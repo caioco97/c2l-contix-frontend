@@ -11,6 +11,8 @@ import { resetPasswordSchema, type ResetPasswordForm } from '../schemas'
 export function ResetPasswordPage() {
   const [params] = useSearchParams()
   const token = params.get('token')
+  // Link do convite de primeiro acesso: mesma troca de senha, com textos de boas-vindas.
+  const invite = params.get('convite') === '1'
   const navigate = useNavigate()
   const toast = useToast()
   const [serverError, setServerError] = useState<string | null>(null)
@@ -23,7 +25,7 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <AuthLayout title="Link inválido" subtitle="O link de redefinição está incompleto ou expirou.">
+      <AuthLayout title="Link inválido" subtitle={`O link ${invite ? 'do convite' : 'de redefinição'} está incompleto ou expirou.`}>
         <Link to="/esqueci-senha" className="text-sm font-medium text-brand-700 hover:underline">
           Solicitar um novo link
         </Link>
@@ -35,15 +37,22 @@ export function ResetPasswordPage() {
     setServerError(null)
     try {
       await authApi.resetPassword({ token, password })
-      toast.success('Senha alterada. Entre com a nova senha.')
+      toast.success(invite ? 'Senha criada. Entre com o seu e-mail e a nova senha.' : 'Senha alterada. Entre com a nova senha.')
       navigate('/login', { replace: true })
     } catch (error) {
-      setServerError(getErrorMessage(error, 'Não foi possível redefinir a senha.'))
+      setServerError(getErrorMessage(error, invite ? 'Não foi possível criar a senha.' : 'Não foi possível redefinir a senha.'))
     }
   })
 
   return (
-    <AuthLayout title="Criar nova senha" subtitle="Use pelo menos 8 caracteres, com letras maiúsculas, minúsculas e um número.">
+    <AuthLayout
+      title={invite ? 'Boas-vindas ao Contix' : 'Criar nova senha'}
+      subtitle={
+        invite
+          ? 'Crie a sua senha de acesso. Use pelo menos 8 caracteres, com letras maiúsculas, minúsculas e um número.'
+          : 'Use pelo menos 8 caracteres, com letras maiúsculas, minúsculas e um número.'
+      }
+    >
       <form onSubmit={onSubmit} noValidate className="space-y-5">
         {serverError && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -66,7 +75,7 @@ export function ResetPasswordPage() {
           />
         </FormField>
         <Button type="submit" size="lg" className="w-full justify-center" loading={isSubmitting}>
-          Salvar nova senha
+          {invite ? 'Criar minha senha' : 'Salvar nova senha'}
         </Button>
       </form>
     </AuthLayout>

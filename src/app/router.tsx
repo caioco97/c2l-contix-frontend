@@ -5,6 +5,7 @@ import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage'
 import { Spinner } from '@/components/ui'
+import { RequireModule } from '@/features/companies/RequireModule'
 import { NotFoundPage } from './NotFoundPage'
 
 // Telas autenticadas são carregadas sob demanda (code splitting por rota).
@@ -29,8 +30,13 @@ export const router = createBrowserRouter([
         children: [
           { index: true, lazy: () => import('@/features/home/HomePage').then((m) => ({ Component: m.HomePage })) },
           {
-            path: 'documentos/:folderId?',
-            lazy: () => import('@/features/documents/DocumentsPage').then((m) => ({ Component: m.DocumentsPage })),
+            element: <RequireModule module="Documentos" />,
+            children: [
+              {
+                path: 'documentos/:folderId?',
+                lazy: () => import('@/features/documents/DocumentsPage').then((m) => ({ Component: m.DocumentsPage })),
+              },
+            ],
           },
           {
             path: 'notificacoes',
@@ -45,6 +51,9 @@ export const router = createBrowserRouter([
             path: 'portal',
             lazy: () => import('@/features/requests/pages/PortalLayout').then((m) => ({ Component: m.PortalLayout })),
             children: [
+              {
+                element: <RequireModule module="Solicitacoes" />,
+                children: [
               {
                 index: true,
                 lazy: () => import('@/features/requests/pages/CatalogPage').then((m) => ({ Component: m.CatalogPage })),
@@ -61,12 +70,19 @@ export const router = createBrowserRouter([
                 path: 'solicitacoes/nova/:typeCode',
                 lazy: () => import('@/features/requests/pages/NewRequestPage').then((m) => ({ Component: m.NewRequestPage })),
               },
+                ],
+              },
+              {
+                element: <RequireModule module="NFe" />,
+                children: [
               {
                 path: 'nfe',
                 lazy: () =>
                   import('@/features/requests/pages/ComingSoonPage').then((m) => ({
                     Component: () => <m.ComingSoonPage title="Manifestação de NF-e" />,
                   })),
+              },
+                ],
               },
               {
                 path: 'relatorios',
@@ -80,6 +96,15 @@ export const router = createBrowserRouter([
           {
             element: <RequireAuth roles={['Admin', 'Collaborator']} />,
             children: [
+              {
+                path: 'empresas',
+                lazy: () => import('@/features/companies/pages/CompaniesPage').then((m) => ({ Component: m.CompaniesPage })),
+              },
+              {
+                path: 'empresas/:companyId',
+                lazy: () =>
+                  import('@/features/companies/pages/CompanyDetailPage').then((m) => ({ Component: m.CompanyDetailPage })),
+              },
               {
                 path: 'noticias',
                 lazy: () => import('@/features/news/NewsAdminPage').then((m) => ({ Component: m.NewsAdminPage })),

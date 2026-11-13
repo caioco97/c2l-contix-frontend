@@ -12,6 +12,8 @@ const TYPE_FROM_API: Record<TipoNotificacaoDto, NotificationType> = {
   VencimentoProximo: 'DueSoon',
   NovaSolicitacao: 'NewRequest',
   SolicitacaoAtualizada: 'RequestUpdated',
+  NovaNoticia: 'NewNews',
+  CertidaoVencimento: 'CndExpiring',
 }
 const TYPE_TO_API = Object.fromEntries(Object.entries(TYPE_FROM_API).map(([k, v]) => [v, k])) as Record<
   NotificationType,
@@ -82,6 +84,8 @@ let mockPreferences: NotificationPreference[] = [
   { type: 'DueSoon', label: 'Vencimentos próximos', email: true },
   { type: 'NewRequest', label: 'Novas solicitações', email: true },
   { type: 'RequestUpdated', label: 'Atualizações de solicitações', email: true },
+  { type: 'NewNews', label: 'Novas notícias do escritório', email: true },
+  { type: 'CndExpiring', label: 'Certidões (CND) a vencer ou vencidas', email: true },
 ]
 
 /* ---------- API ---------- */

@@ -4,6 +4,95 @@ export interface Company {
   tradeName: string
   nickname: string
   document: string
+  /** Usuário do cliente: módulos do portal liberados nesta empresa. Ausente para o escritório (acesso total). */
+  modules?: PortalModule[] | null
+}
+
+/** Módulos do portal do cliente liberados por usuário e empresa (códigos da API). */
+export type PortalModule = 'Documentos' | 'Solicitacoes' | 'NFe'
+
+export type CompanyStatus = 'Ativa' | 'Inativa' | 'Suspensa' | 'Baixada'
+
+export interface Address {
+  zip: string
+  street: string
+  number: string
+  complement: string
+  district: string
+  city: string
+  state: string
+}
+
+/** Empresa na gestão do escritório (lista). */
+export interface CompanySummary {
+  id: string
+  legalName: string
+  tradeName: string | null
+  nickname: string | null
+  document: string
+  taxRegime: TaxRegime
+  status: CompanyStatus
+}
+
+/** Cadastro completo da empresa. */
+export interface CompanyDetail extends CompanySummary {
+  stateRegistration: string | null
+  cityRegistration: string | null
+  email: string | null
+  phone: string | null
+  address: Address | null
+  createdAt: string
+}
+
+export type CompanyInput = Omit<CompanyDetail, 'id' | 'createdAt'>
+
+/** Indicadores da página da empresa. */
+export interface CompanyPanel {
+  activeUsers: number
+  pendingInvites: number
+  documentsNotSeenByClient: number
+  receivedUnread: number
+  openRequests: number
+  overdueRequests: number
+  expiredCnds: number
+  expiringCnds: number
+}
+
+export type HistoryCategory = 'Documento' | 'Solicitacao' | 'Certidao' | 'Usuario'
+
+export interface CompanyHistoryItem {
+  id: string
+  category: HistoryCategory
+  type: string
+  at: string
+  userName: string | null
+  isOffice: boolean | null
+  title: string
+  detail: string | null
+  referenceId: string | null
+  folderId: string | null
+}
+
+/** Usuário do portal no contexto de uma empresa, com as permissões nela. */
+export interface PortalUser {
+  id: string
+  name: string
+  email: string
+  active: boolean
+  invitePending: boolean
+  invitedAt: string | null
+  lastLoginAt: string | null
+  linkedAt: string
+  modules: PortalModule[]
+  allFolders: boolean
+  folderIds: string[]
+  otherCompanies: number
+}
+
+export interface PortalPermissions {
+  modules: PortalModule[]
+  allFolders: boolean
+  folderIds: string[]
 }
 
 export interface DocumentFolder {
@@ -302,7 +391,7 @@ export interface OfficeUser {
 
 /* ---------- Notificações ---------- */
 
-export type NotificationType = 'NewDocument' | 'DueSoon' | 'NewRequest' | 'RequestUpdated'
+export type NotificationType = 'NewDocument' | 'DueSoon' | 'NewRequest' | 'RequestUpdated' | 'NewNews' | 'CndExpiring'
 
 export interface AppNotification {
   id: string

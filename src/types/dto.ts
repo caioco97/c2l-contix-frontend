@@ -40,6 +40,80 @@ export interface EmpresaDto {
   documento: string
   regimeTributario?: string
   situacao?: string
+  /** Só para o usuário do cliente: módulos liberados nesta empresa. */
+  modulos?: ModuloPortalDto[] | null
+}
+
+export type ModuloPortalDto = 'Documentos' | 'Solicitacoes' | 'NFe'
+
+export interface EnderecoDto {
+  cep: string | null
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
+  cidade: string | null
+  uf: string | null
+}
+
+export interface EmpresaDetalheDto {
+  id: string
+  razaoSocial: string
+  nomeFantasia: string | null
+  apelido: string | null
+  documento: string
+  inscricaoEstadual: string | null
+  inscricaoMunicipal: string | null
+  regimeTributario: RegimeTributarioDto
+  situacao: 'Ativa' | 'Inativa' | 'Suspensa' | 'Baixada'
+  email: string | null
+  telefone: string | null
+  endereco: EnderecoDto | null
+  createdAt: string
+}
+
+export interface PainelEmpresaDto {
+  usuariosAtivos: number
+  convitesPendentes: number
+  documentosNaoVistosPeloCliente: number
+  documentosRecebidosNaoLidos: number
+  solicitacoesEmAberto: number
+  solicitacoesAtrasadas: number
+  certidoesVencidas: number
+  certidoesAVencer: number
+}
+
+export interface ItemHistoricoEmpresaDto {
+  id: string
+  categoria: 'Documento' | 'Solicitacao' | 'Certidao' | 'Usuario'
+  tipo: string
+  ocorridoEm: string
+  usuarioNome: string | null
+  ehDoEscritorio: boolean | null
+  titulo: string
+  detalhe: string | null
+  referenciaId: string | null
+  pastaId: string | null
+}
+
+export interface HistoricoEmpresaDto {
+  itens: ItemHistoricoEmpresaDto[]
+  proximoAntesDe: string | null
+}
+
+export interface UsuarioPortalDto {
+  id: string
+  nome: string
+  email: string
+  ativo: boolean
+  convitePendente: boolean
+  conviteEnviadoEm: string | null
+  ultimoLoginEm: string | null
+  vinculadoEm: string
+  modulos: ModuloPortalDto[]
+  todasAsPastas: boolean
+  pastaIds: string[]
+  outrasEmpresas: number
 }
 
 export interface PastaDto {
@@ -199,7 +273,13 @@ export interface UsuarioResumoDto {
 
 /* ---------- Notificações ---------- */
 
-export type TipoNotificacaoDto = 'NovoDocumento' | 'VencimentoProximo' | 'NovaSolicitacao' | 'SolicitacaoAtualizada'
+export type TipoNotificacaoDto =
+  | 'NovoDocumento'
+  | 'VencimentoProximo'
+  | 'NovaSolicitacao'
+  | 'SolicitacaoAtualizada'
+  | 'NovaNoticia'
+  | 'CertidaoVencimento'
 
 export interface NotificacaoDto {
   id: string

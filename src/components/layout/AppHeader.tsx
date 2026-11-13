@@ -1,18 +1,31 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BellRing, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
+import { BellRing, Building2, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
 import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
+import { useModuleAccess } from '@/features/companies/useModuleAccess'
+import type { PortalModule } from '@/types/domain'
 import { Logo } from './Logo'
 
-const NAV = [
-  { to: '/', label: 'Início', icon: Home, end: true },
-  { to: '/documentos', label: 'Documentos', icon: FolderOpen },
-  { to: '/certidoes', label: 'CND', icon: ShieldCheck },
-  { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid },
+interface NavItem {
+  to: string
+  label: string
+  icon: typeof Home
+  end?: boolean
   /** Só para o escritório (administrador e colaborador). */
+  officeOnly?: boolean
+  /** Para o cliente: aparece se algum destes módulos estiver liberado. */
+  modules?: PortalModule[]
+}
+
+const NAV: NavItem[] = [
+  { to: '/', label: 'Início', icon: Home, end: true },
+  { to: '/documentos', label: 'Documentos', icon: FolderOpen, modules: ['Documentos'] },
+  { to: '/certidoes', label: 'CND', icon: ShieldCheck },
+  { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid, modules: ['Solicitacoes', 'NFe'] },
+  { to: '/empresas', label: 'Empresas', icon: Building2, officeOnly: true },
   { to: '/atendimento', label: 'Atendimento', icon: Headset, officeOnly: true },
   { to: '/noticias', label: 'Notícias', icon: Megaphone, officeOnly: true },
 ]
@@ -21,7 +34,10 @@ export function AppHeader() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const nav = NAV.filter((n) => !n.officeOnly || (user && user.role !== 'Client'))
+  const { can } = useModuleAccess()
+  const nav = NAV.filter(
+    (n) => (!n.officeOnly || (user && user.role !== 'Client')) && (!n.modules || n.modules.some((m) => can(m))),
+  )
 
   const handleLogout = async () => {
     await logout()
