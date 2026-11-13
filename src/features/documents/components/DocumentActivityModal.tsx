@@ -117,6 +117,7 @@ export function DocumentActivityModal({ doc, onClose }: { doc: DocumentItem | nu
                 <p className="text-xs text-slate-500">
                   {formatDateTime(e.at)}
                   {e.detail && ` · ${e.detail}`}
+                  {e.ip && <span title="IP de origem"> · IP {e.ip}</span>}
                 </p>
               </li>
             )

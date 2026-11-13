@@ -392,10 +392,10 @@ export const documentTrackingApi = {
       const doc = mockStore.documents(companyId).find((d) => d.id === id)
       if (!doc) return mockDelay([], 200)
       const events: DocumentEvent[] = [
-        { id: `${id}-up`, type: 'Upload', at: doc.publishedAt, userName: doc.addedBy, isOffice: doc.origin !== 'client', detail: `Pasta ${doc.folderPath}` },
+        { id: `${id}-up`, type: 'Upload', at: doc.publishedAt, userName: doc.addedBy, isOffice: doc.origin !== 'client', detail: `Pasta ${doc.folderPath}`, ip: '189.45.10.21' },
       ]
       if ((doc.recipientViews ?? 0) > 0)
-        events.unshift({ id: `${id}-dl`, type: 'Download', at: doc.modifiedAt, userName: 'Ana Souza', isOffice: false, detail: null })
+        events.unshift({ id: `${id}-dl`, type: 'Download', at: doc.modifiedAt, userName: 'Ana Souza', isOffice: false, detail: null, ip: '177.32.200.8' })
       return mockDelay(events, 250)
     }
     const { data } = await api.get<EventoDocumentoDto[]>(`/empresas/${companyId}/documentos/${id}/historico`)
@@ -406,6 +406,7 @@ export const documentTrackingApi = {
       userName: e.usuarioNome,
       isOffice: e.ehDoEscritorio,
       detail: e.detalhe,
+      ip: e.ip ?? null,
     }))
   },
 }
