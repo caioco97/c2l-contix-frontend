@@ -1,3 +1,4 @@
+import { env } from '@/config/env'
 import type { ReactNode } from 'react'
 import { CalendarClock, FileCheck2, MessagesSquare } from 'lucide-react'
 import { Logo } from '@/components/layout/Logo'
@@ -36,6 +37,12 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           <Logo className="mb-10 lg:hidden" />
           <h2 className="text-2xl font-semibold text-ink">{title}</h2>
           {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+          {env.useMocks && (
+            <p className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Modo de demonstração (<code>VITE_USE_MOCKS=true</code>): dados simulados, sem chamar a API. Nenhum e-mail é
+              enviado.
+            </p>
+          )}
           <div className="mt-8">{children}</div>
         </div>
       </main>

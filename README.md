@@ -13,14 +13,15 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Por padrão o app roda com **dados simulados** (`VITE_USE_MOCKS=true`), sem precisar da API. Entre com qualquer e-mail e a senha `123456`.
+Por padrão o app usa a **API .NET** em `http://localhost:5080/api/v1` (suba o backend antes; veja o README do `c2l-contix-backend`). Usuários de demonstração: `admin@contix.dev`, `colaborador@contix.dev` e `cliente@contix.dev`, senha `Contix@123`.
 
-Para usar a API .NET, crie um `.env.development.local`:
+Para rodar sem a API, com **dados simulados**, crie um `.env.development.local`:
 
 ```env
-VITE_API_URL=http://localhost:5080/api/v1
-VITE_USE_MOCKS=false
+VITE_USE_MOCKS=true
 ```
+
+Nesse modo qualquer e-mail entra com a senha `123456` e nada é enviado de verdade (por exemplo, o "esqueci a senha" não manda e-mail). A tela de login mostra um aviso quando o modo simulado está ligado.
 
 | Script | O que faz |
 | --- | --- |
