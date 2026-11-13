@@ -6,15 +6,34 @@ import { queryClient } from '@/lib/queryClient'
 import { mockFolders, mockUser } from '@/mocks/data'
 import { mockStore } from '@/mocks/store'
 import type { PagedResult } from '@/types/api'
-import type { DocumentFolder, DocumentItem, DueDocument, ReadFilter } from '@/types/domain'
-import type { DocumentoDto, PagedDto, PastaDto, VencimentoDto } from '@/types/dto'
+import type {
+  DocumentAccessSummary,
+  DocumentEvent,
+  DocumentFolder,
+  DocumentItem,
+  DocumentOrigin,
+  DueDocument,
+  ReadFilter,
+} from '@/types/domain'
+import type {
+  AcessosDocumentoDto,
+  DocumentoDto,
+  EventoDocumentoDto,
+  OrigemDocumento,
+  PagedDto,
+  PastaDto,
+  VencimentoDto,
+} from '@/types/dto'
 
-export type DocumentSortField = 'name' | 'publishedAt' | 'dueDate' | 'modifiedAt'
+export type DocumentSortField = 'name' | 'publishedAt' | 'dueDate' | 'competence' | 'modifiedAt'
 
 export interface DocumentQuery {
   folderId?: string
   filter: ReadFilter
   search: string
+  /** Mês de competência (yyyy-MM). */
+  competence?: string
+  origin?: DocumentOrigin
   sortBy: DocumentSortField
   sortDir: 'asc' | 'desc'
   page: number
@@ -27,6 +46,13 @@ export const documentKeys = {
   list: (companyId: string, q: DocumentQuery) => ['documents', companyId, 'list', q] as const,
   due: (companyId: string, month: string) => ['documents', companyId, 'due', month] as const,
   recent: (companyId: string, read: boolean) => ['documents', companyId, 'recent', read] as const,
+  access: (companyId: string, id: string) => ['documents', companyId, 'access', id] as const,
+  history: (companyId: string, id: string) => ['documents', companyId, 'history', id] as const,
+}
+
+export interface FolderInput {
+  name: string
+  clientCanUpload: boolean
 }
 
 function collectFolderIds(folders: DocumentFolder[], id: string): string[] {
@@ -55,9 +81,12 @@ const SORT_FIELD: Record<DocumentSortField, string> = {
   name: 'nome',
   publishedAt: 'publicadoEm',
   dueDate: 'dataVencimento',
+  competence: 'competencia',
   modifiedAt: 'modificado',
 }
 const READ_STATUS: Record<ReadFilter, string> = { all: 'Todos', unread: 'NaoLidos', read: 'Lidos' }
+const ORIGIN: Record<OrigemDocumento, DocumentOrigin> = { Escritorio: 'office', Cliente: 'client' }
+const ORIGIN_DTO: Record<DocumentOrigin, OrigemDocumento> = { office: 'Escritorio', client: 'Cliente' }
 
 function toFolder(dto: PastaDto): DocumentFolder {
   return {
@@ -94,6 +123,9 @@ function toDocument(dto: DocumentoDto, paths: Map<string, string>): DocumentItem
     modifiedAt: dto.updatedAt ?? dto.publicadoEm,
     sizeBytes: dto.tamanhoBytes,
     isRead: dto.lido,
+    competence: dto.competencia,
+    origin: ORIGIN[dto.origem] ?? 'office',
+    recipientViews: dto.visualizacoesDestinatarios,
   }
 }
 
@@ -131,6 +163,8 @@ export const documentsApi = {
         .filter((d) => !folderIds || folderIds.includes(d.folderId))
         .filter((d) => (q.filter === 'all' ? true : q.filter === 'read' ? d.isRead : !d.isRead))
         .filter((d) => !term || d.name.toLowerCase().includes(term) || d.comment?.toLowerCase().includes(term))
+        .filter((d) => !q.competence || d.competence?.startsWith(q.competence))
+        .filter((d) => !q.origin || (d.origin ?? 'office') === q.origin)
         .sort((a, b) => {
           const av = a[q.sortBy] ?? ''
           const bv = b[q.sortBy] ?? ''
@@ -144,6 +178,8 @@ export const documentsApi = {
       pastaId: q.folderId,
       busca: q.search || undefined,
       status: READ_STATUS[q.filter],
+      competencia: q.competence ? `${q.competence}-01` : undefined,
+      origem: q.origin ? ORIGIN_DTO[q.origin] : undefined,
       orderBy: SORT_FIELD[q.sortBy],
       desc: q.sortDir === 'desc',
       page: q.page,
@@ -245,7 +281,16 @@ export const documentsApi = {
 
   async upload(
     companyId: string,
-    input: { folderId: string; folderPath: string; files: File[]; comment?: string; dueDate?: string },
+    input: {
+      folderId: string
+      folderPath: string
+      files: File[]
+      comment?: string
+      dueDate?: string
+      /** yyyy-MM */
+      competence?: string
+      fromClient?: boolean
+    },
   ): Promise<void> {
     if (env.useMocks) {
       const now = mockStore.now()
@@ -262,6 +307,9 @@ export const documentsApi = {
           modifiedAt: now,
           sizeBytes: f.size,
           isRead: true,
+          competence: input.competence ? `${input.competence}-01` : null,
+          origin: (input.fromClient ? 'client' : 'office') as DocumentOrigin,
+          recipientViews: 0,
         })),
       )
       return mockDelay(undefined, 700)
@@ -271,6 +319,7 @@ export const documentsApi = {
     input.files.forEach((f) => form.append('arquivos', f))
     if (input.comment) form.append('comentario', input.comment)
     if (input.dueDate) form.append('dataVencimento', input.dueDate)
+    if (input.competence) form.append('competencia', `${input.competence}-01`)
     await api.post(`/empresas/${companyId}/documentos`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
@@ -284,6 +333,138 @@ export const documentsApi = {
       mensagem: input.message.trim() || null,
     })
     return data.destinatarios
+  },
+}
+
+/* ---------- Acompanhamento (somente escritório) ---------- */
+
+export const documentTrackingApi = {
+  /** Quem visualizou ou baixou, incluindo destinatários que ainda não abriram. */
+  async access(companyId: string, id: string): Promise<DocumentAccessSummary> {
+    if (env.useMocks) {
+      const doc = mockStore.documents(companyId).find((d) => d.id === id)
+      const viewed = (doc?.recipientViews ?? 0) > 0
+      const users = [
+        {
+          userId: 'u-cli-1',
+          name: 'Ana Souza',
+          email: 'ana@empresa.com.br',
+          isOffice: false,
+          viewedAt: viewed ? doc!.publishedAt : null,
+          lastDownloadAt: viewed ? doc!.publishedAt : null,
+          downloads: viewed ? 1 : 0,
+          isRecipient: true,
+        },
+        {
+          userId: 'u-cli-2',
+          name: 'Bruno Martins',
+          email: 'bruno@empresa.com.br',
+          isOffice: false,
+          viewedAt: null,
+          lastDownloadAt: null,
+          downloads: 0,
+          isRecipient: true,
+        },
+      ]
+      return mockDelay({ origin: doc?.origin ?? 'office', recipients: 2, recipientsWhoViewed: viewed ? 1 : 0, users }, 250)
+    }
+    const { data } = await api.get<AcessosDocumentoDto>(`/empresas/${companyId}/documentos/${id}/acessos`)
+    return {
+      origin: ORIGIN[data.origem] ?? 'office',
+      recipients: data.totalDestinatarios,
+      recipientsWhoViewed: data.destinatariosQueVisualizaram,
+      users: data.usuarios.map((u) => ({
+        userId: u.usuarioId,
+        name: u.nome,
+        email: u.email,
+        isOffice: u.ehDoEscritorio,
+        viewedAt: u.visualizadoEm,
+        lastDownloadAt: u.ultimoDownloadEm,
+        downloads: u.downloads,
+        isRecipient: u.destinatario,
+      })),
+    }
+  },
+
+  /** Histórico de ações (auditoria), do mais recente ao mais antigo. */
+  async history(companyId: string, id: string): Promise<DocumentEvent[]> {
+    if (env.useMocks) {
+      const doc = mockStore.documents(companyId).find((d) => d.id === id)
+      if (!doc) return mockDelay([], 200)
+      const events: DocumentEvent[] = [
+        { id: `${id}-up`, type: 'Upload', at: doc.publishedAt, userName: doc.addedBy, isOffice: doc.origin !== 'client', detail: `Pasta ${doc.folderPath}` },
+      ]
+      if ((doc.recipientViews ?? 0) > 0)
+        events.unshift({ id: `${id}-dl`, type: 'Download', at: doc.modifiedAt, userName: 'Ana Souza', isOffice: false, detail: null })
+      return mockDelay(events, 250)
+    }
+    const { data } = await api.get<EventoDocumentoDto[]>(`/empresas/${companyId}/documentos/${id}/historico`)
+    return data.map((e) => ({
+      id: e.id,
+      type: e.tipo,
+      at: e.ocorridoEm,
+      userName: e.usuarioNome,
+      isOffice: e.ehDoEscritorio,
+      detail: e.detalhe,
+    }))
+  },
+}
+
+/* ---------- Pastas (somente escritório) ---------- */
+
+function findMockFolder(folders: DocumentFolder[], id: string): DocumentFolder | undefined {
+  for (const f of folders) {
+    if (f.id === id) return f
+    const child = findMockFolder(f.children ?? [], id)
+    if (child) return child
+  }
+}
+
+export const folderAdminApi = {
+  async create(companyId: string, input: FolderInput & { parentId: string | null }): Promise<string> {
+    if (env.useMocks) {
+      const folder: DocumentFolder = {
+        id: crypto.randomUUID(),
+        name: input.name.trim(),
+        parentId: input.parentId,
+        unreadCount: 0,
+        clientCanUpload: input.clientCanUpload,
+      }
+      const parent = input.parentId ? findMockFolder(mockFolders, input.parentId) : undefined
+      if (parent) parent.children = [...(parent.children ?? []), folder]
+      else mockFolders.push(folder)
+      return mockDelay(folder.id, 250)
+    }
+    const { data } = await api.post<PastaDto>(`/empresas/${companyId}/pastas`, {
+      nome: input.name.trim(),
+      pastaPaiId: input.parentId,
+      permiteUploadCliente: input.clientCanUpload,
+    })
+    return data.id
+  },
+
+  async update(companyId: string, id: string, input: FolderInput): Promise<void> {
+    if (env.useMocks) {
+      const f = findMockFolder(mockFolders, id)
+      if (f) Object.assign(f, { name: input.name.trim(), clientCanUpload: input.clientCanUpload })
+      return mockDelay(undefined, 250)
+    }
+    await api.put(`/empresas/${companyId}/pastas/${id}`, {
+      nome: input.name.trim(),
+      permiteUploadCliente: input.clientCanUpload,
+    })
+  },
+
+  /** Só exclui pastas vazias (sem documentos nem subpastas). */
+  async remove(companyId: string, id: string): Promise<void> {
+    if (env.useMocks) {
+      const strip = (list: DocumentFolder[]): DocumentFolder[] =>
+        list.filter((f) => f.id !== id).map((f) => (f.children ? { ...f, children: strip(f.children) } : f))
+      const next = strip(mockFolders)
+      mockFolders.splice(0, mockFolders.length, ...next)
+      return mockDelay(undefined, 250)
+    }
+    await api.delete(`/empresas/${companyId}/pastas/${id}`)
   },
 }
 

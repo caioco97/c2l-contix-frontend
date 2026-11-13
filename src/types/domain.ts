@@ -28,6 +28,45 @@ export interface DocumentItem {
   modifiedAt: string
   sizeBytes: number
   isRead: boolean
+  /** Competência (yyyy-MM-01), quando informada. */
+  competence?: string | null
+  /** Quem publicou: o escritório (para a empresa) ou a empresa (para o escritório). */
+  origin?: DocumentOrigin
+  /** Quantos destinatários (o outro lado) já abriram ou baixaram. */
+  recipientViews?: number
+}
+
+export type DocumentOrigin = 'office' | 'client'
+
+/** Situação de um usuário em relação a um documento. */
+export interface DocumentAccess {
+  userId: string
+  name: string
+  email: string
+  isOffice: boolean
+  viewedAt: string | null
+  lastDownloadAt: string | null
+  downloads: number
+  /** Usuário do lado que deveria ler o documento. */
+  isRecipient: boolean
+}
+
+export interface DocumentAccessSummary {
+  origin: DocumentOrigin
+  recipients: number
+  recipientsWhoViewed: number
+  users: DocumentAccess[]
+}
+
+export type DocumentEventType = 'Upload' | 'Visualizacao' | 'Download' | 'Envio' | 'Exclusao'
+
+export interface DocumentEvent {
+  id: string
+  type: DocumentEventType
+  at: string
+  userName: string
+  isOffice: boolean
+  detail: string | null
 }
 
 /** Documento com vencimento, exibido no calendário. */

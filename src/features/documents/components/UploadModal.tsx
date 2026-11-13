@@ -17,6 +17,8 @@ const schema = z.object({
     .refine((files) => files.every((f) => f.size <= MAX_SIZE), 'Cada arquivo pode ter no máximo 25 MB.'),
   comment: z.string().max(500, 'Máximo de 500 caracteres.'),
   dueDate: z.string(),
+  /** yyyy-MM */
+  competence: z.string(),
 })
 export type UploadForm = z.infer<typeof schema>
 
@@ -37,7 +39,7 @@ export function UploadModal({ open, folderName, onClose, onSubmit }: UploadModal
     control,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<UploadForm>({ resolver: zodResolver(schema), defaultValues: { files: [], comment: '', dueDate: '' } })
+  } = useForm<UploadForm>({ resolver: zodResolver(schema), defaultValues: { files: [], comment: '', dueDate: '', competence: '' } })
   const files = useWatch({ control, name: 'files' })
 
   const addFiles = (list: FileList | null) => {
@@ -129,9 +131,12 @@ export function UploadModal({ open, folderName, onClose, onSubmit }: UploadModal
           </ul>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-[1fr_200px]">
-          <FormField label="Comentário" htmlFor="comment" error={errors.comment?.message}>
-            <Textarea id="comment" rows={2} className="min-h-10" {...register('comment')} />
+        <FormField label="Comentário" htmlFor="comment" error={errors.comment?.message}>
+          <Textarea id="comment" rows={2} className="min-h-10" {...register('comment')} />
+        </FormField>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label="Competência" htmlFor="competence" hint="Mês de referência (ex.: guias e folha).">
+            <Input id="competence" type="month" {...register('competence')} />
           </FormField>
           <FormField label="Data de vencimento" htmlFor="dueDate" hint="Aparece no calendário do cliente.">
             <Input id="dueDate" type="date" {...register('dueDate')} />
