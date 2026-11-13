@@ -286,6 +286,16 @@ export const companiesApi = {
     return toDetail(data)
   },
 
+  /** Exclusão lógica (somente administrador). */
+  async remove(id: string): Promise<void> {
+    if (env.useMocks) {
+      if (!mockDetails.delete(id)) return mockError(404, 'Empresa não encontrada.')
+      mockUsers.delete(id)
+      return mockDelay(undefined)
+    }
+    await api.delete(`/empresas/${id}`)
+  },
+
   async panel(id: string): Promise<CompanyPanel> {
     if (env.useMocks) {
       const users = usersOf(id)

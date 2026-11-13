@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Building2, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
+import { Building2, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from 'lucide-react'
 import { Badge, Button, Card, EmptyState, Input, Select, Skeleton, Table, TBody, Td, Th, THead, Tr, useToast } from '@/components/ui'
+import { useAuth } from '@/features/auth/AuthContext'
 import { getErrorMessage } from '@/lib/api'
 import { formatCnpj } from '@/lib/format'
 import type { CompanyInput, CompanyStatus, TaxRegime } from '@/types/domain'
 import { companiesApi, companyKeys, type CompanyFilters } from '../api'
 import { CompanyFormModal } from '../components/CompanyFormModal'
+import { DeleteCompanyModal, type CompanyToDelete } from '../components/DeleteCompanyModal'
 import { COMPANY_STATUSES, regimeLabel, statusOf, TAX_REGIMES } from '../meta'
 
 const PAGE_SIZE = 20
@@ -31,6 +33,9 @@ export function CompaniesPage() {
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
   const [creating, setCreating] = useState(false)
+  const [removing, setRemoving] = useState<CompanyToDelete | null>(null)
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'Admin'
   const debounced = useDebounced(search)
 
   const filters: CompanyFilters = {
@@ -130,6 +135,7 @@ export function CompaniesPage() {
                   <Th>CNPJ / CPF</Th>
                   <Th>Regime</Th>
                   <Th>Situação</Th>
+                  {isAdmin && <Th className="w-12"><span className="sr-only">Ações</span></Th>}
                 </tr>
               </THead>
               <TBody>
@@ -156,6 +162,23 @@ export function CompaniesPage() {
                       <Td>
                         <Badge tone={s.tone}>{s.label}</Badge>
                       </Td>
+                      {isAdmin && (
+                        <Td className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Excluir ${c.tradeName || c.legalName}`}
+                            title="Excluir empresa"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setRemoving(c)
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </Td>
+                      )}
                     </Tr>
                   )
                 })}
@@ -185,6 +208,8 @@ export function CompaniesPage() {
         onClose={() => setCreating(false)}
         onSubmit={(input) => create.mutateAsync(input).then(() => undefined, () => undefined)}
       />
+
+      <DeleteCompanyModal company={removing} onClose={() => setRemoving(null)} />
     </main>
   )
 }

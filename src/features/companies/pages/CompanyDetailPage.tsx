@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Building2, FileUp, Pencil, UserPlus } from 'lucide-react'
+import { ArrowLeft, Building2, FileUp, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Skeleton, Tabs, useToast } from '@/components/ui'
+import { useAuth } from '@/features/auth/AuthContext'
 import { getErrorMessage } from '@/lib/api'
 import { formatCnpj, formatDate } from '@/lib/format'
 import type { CompanyDetail, CompanyInput, CompanyPanel } from '@/types/domain'
@@ -10,6 +11,7 @@ import { useActiveCompany } from '../ActiveCompanyContext'
 import { companiesApi, companyKeys } from '../api'
 import { CompanyFormModal } from '../components/CompanyFormModal'
 import { CompanyUsersTab } from '../components/CompanyUsersTab'
+import { DeleteCompanyModal } from '../components/DeleteCompanyModal'
 import { CndTab, DocumentsTab, HistoryTab, RequestsTab } from '../components/CompanyActivityTabs'
 import { regimeLabel, statusOf } from '../meta'
 
@@ -26,6 +28,9 @@ export function CompanyDetailPage() {
   const { setCompany } = useActiveCompany()
   const [editing, setEditing] = useState(false)
   const [inviting, setInviting] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'Admin'
 
   const raw = params.get('aba')
   const tab: Tab = TABS.includes(raw as Tab) ? (raw as Tab) : 'dados'
@@ -115,6 +120,11 @@ export function CompanyDetailPage() {
           >
             <UserPlus className="h-4 w-4" /> Convidar usuário
           </Button>
+          {isAdmin && (
+            <Button variant="ghost" className="text-red-600 hover:bg-red-50" onClick={() => setRemoving(true)}>
+              <Trash2 className="h-4 w-4" /> Excluir
+            </Button>
+          )}
         </div>
       </div>
 
@@ -146,6 +156,12 @@ export function CompanyDetailPage() {
         company={c}
         onClose={() => setEditing(false)}
         onSubmit={(input) => update.mutateAsync(input).then(() => undefined, () => undefined)}
+      />
+
+      <DeleteCompanyModal
+        company={removing ? c : null}
+        onClose={() => setRemoving(false)}
+        onDeleted={() => navigate('/empresas', { replace: true })}
       />
     </main>
   )
