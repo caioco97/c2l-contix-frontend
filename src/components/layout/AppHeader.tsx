@@ -6,36 +6,8 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { useModuleAccess } from '@/features/companies/useModuleAccess'
-import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
-import { useCompanyLogoUrl } from '@/features/companies/branding/useCompanyLogoUrl'
-import type { Company, PortalModule } from '@/types/domain'
+import type { PortalModule } from '@/types/domain'
 import { Logo } from './Logo'
-
-/** Logo da empresa do cliente no cabeçalho. Logo quadrado (selo) ou sem logo: mostra também o nome. */
-function ClientCompanyMark({ company, logoUrl }: { company: Company; logoUrl: string | null }) {
-  const [square, setSquare] = useState(false)
-  const name = company.nickname && company.nickname.length <= 18 ? company.tradeName || company.nickname : company.tradeName
-  const label = name || company.legalName
-  return (
-    <span className="flex min-w-0 items-center gap-2">
-      {logoUrl ? (
-        <img
-          src={logoUrl}
-          alt={label}
-          onLoad={(e) => setSquare(e.currentTarget.naturalWidth <= e.currentTarget.naturalHeight * 1.25)}
-          className={cn('h-10 object-contain', square ? 'w-10 rounded-lg object-cover' : 'w-auto max-w-36 sm:max-w-44')}
-        />
-      ) : (
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
-          {label.slice(0, 2).toUpperCase()}
-        </span>
-      )}
-      {(!logoUrl || square) && (
-        <span className="hidden max-w-40 truncate text-sm font-semibold text-ink sm:block">{label}</span>
-      )}
-    </span>
-  )
-}
 
 type Audience = 'office' | 'client'
 
@@ -71,9 +43,6 @@ export function AppHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { can } = useModuleAccess()
   const audience: Audience = user?.role === 'Client' ? 'client' : 'office'
-  // No portal do cliente, o logotipo da empresa selecionada substitui o do escritório.
-  const { company } = useActiveCompany()
-  const companyLogo = useCompanyLogoUrl(audience === 'client' ? company?.id : undefined, company?.branding)
   const nav = NAV.filter(
     (n) => (!n.audience || n.audience === audience) && (!n.modules || n.modules.some((m) => can(m))),
   )
@@ -98,18 +67,11 @@ export function AppHeader() {
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
 
-        <NavLink to="/" aria-label="Início" className="flex shrink-0 items-center gap-3">
+        <NavLink to="/" aria-label="Início" className="shrink-0">
           {user?.office.logoUrl ? (
             <img src={user.office.logoUrl} alt={user.office.name} className="h-10 w-auto" />
           ) : (
             <Logo />
-          )}
-          {/* No portal do cliente: logo do Contix (ou do escritório) | logo da empresa selecionada. */}
-          {audience === 'client' && company && (
-            <>
-              <span aria-hidden className="h-8 w-px bg-slate-200" />
-              <ClientCompanyMark company={company} logoUrl={companyLogo} />
-            </>
           )}
         </NavLink>
 

@@ -188,7 +188,7 @@ export function CompanyContextBar({ width = 'default' }: CompanyContextBarProps)
   const { user } = useAuth()
   const { companies, company, isLoading } = useActiveCompany()
   const canSwitch = companies.length > 1
-  // No portal do cliente a faixa leva a cor da empresa; o escritório mantém a faixa branca.
+  // No portal do cliente a faixa leva um degradê suave da cor da empresa para o fundo da tela; o escritório mantém a faixa branca.
   const branded = user?.role === 'Client' && !!company
 
   return (
@@ -196,7 +196,7 @@ export function CompanyContextBar({ width = 'default' }: CompanyContextBarProps)
       className={cn(
         'border-b',
         branded
-          ? 'relative border-transparent bg-gradient-to-r from-brand-900 via-brand-800 to-brand-700 text-white after:absolute after:inset-x-0 after:bottom-0 after:h-[3px] after:bg-accent'
+          ? 'border-slate-200 bg-gradient-to-r from-brand-600/20 via-brand-600/5 to-surface'
           : 'border-slate-200 bg-white',
       )}
     >
@@ -210,20 +210,13 @@ export function CompanyContextBar({ width = 'default' }: CompanyContextBarProps)
           <Skeleton className="h-11 w-80" />
         ) : company ? (
           <div className="flex min-w-[15rem] flex-1 items-center gap-3">
-            <CompanyLogo company={company} className={cn('h-11 w-11', branded && 'border-white/20 shadow-sm')} />
+            <CompanyLogo company={company} className="h-11 w-11" />
             <div className="min-w-0">
-              <p
-                className={cn(
-                  'text-[11px] font-semibold uppercase tracking-wider',
-                  branded ? 'text-white/70' : 'text-brand-700',
-                )}
-              >
-                {branded && user ? `Olá, ${user.name.split(' ')[0]}` : 'Empresa selecionada'}
-              </p>
-              <p className={cn('truncate text-base font-semibold sm:text-lg', branded ? 'text-white' : 'text-ink')}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700">Empresa selecionada</p>
+              <p className="truncate text-base font-semibold text-ink sm:text-lg">
                 {company.legalName}
               </p>
-              <p className={cn('truncate text-xs', branded ? 'text-white/70' : 'text-slate-500')}>
+              <p className="truncate text-xs text-slate-500">
                 {company.document.length === 11 ? 'CPF' : 'CNPJ'} {formatCpfCnpj(company.document)}
                 {company.nickname ? ` · ${company.nickname}` : ''}
               </p>
@@ -246,7 +239,6 @@ export function CompanyContextBar({ width = 'default' }: CompanyContextBarProps)
             trigger={({ open, toggle }) => (
               <Button
                 variant={company ? 'secondary' : 'primary'}
-                className={cn(branded && 'border-white/30 bg-white/10 text-white hover:bg-white/20')}
                 onClick={toggle}
                 aria-expanded={open}
                 aria-haspopup="dialog"
