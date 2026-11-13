@@ -27,7 +27,6 @@ import {
   Select,
   Skeleton,
   SortableTh,
-  Spinner,
   Table,
   TBody,
   Td,
@@ -36,13 +35,12 @@ import {
   Tr,
   useToast,
 } from '@/components/ui'
-import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
 import { useAuth } from '@/features/auth/AuthContext'
-import { CompanySwitcher } from '@/features/companies/CompanySwitcher'
+import { CompanyContextBar, CompanyGate } from '@/features/companies/CompanySelector'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/format'
-import type { DocumentFolder, DocumentItem, DocumentOrigin, ReadFilter } from '@/types/domain'
+import type { Company, DocumentFolder, DocumentItem, DocumentOrigin, ReadFilter } from '@/types/domain'
 import {
   documentKeys,
   documentsApi,
@@ -81,12 +79,24 @@ function useDebounced<T>(value: T, ms = 300) {
 }
 
 export function DocumentsPage() {
+  return (
+    <>
+      <CompanyContextBar width="wide" />
+      <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
+        <CompanyGate purpose="ver, enviar e organizar os documentos">
+          {(company) => <DocumentsWorkspace key={company.id} company={company} />}
+        </CompanyGate>
+      </div>
+    </>
+  )
+}
+
+function DocumentsWorkspace({ company }: { company: Company }) {
   const { folderId } = useParams()
   const navigate = useNavigate()
-  const { company } = useActiveCompany()
   const queryClient = useQueryClient()
   const toast = useToast()
-  const companyId = company?.id ?? ''
+  const companyId = company.id
   const { user } = useAuth()
   const isOffice = !!user && user.role !== 'Client'
   const isReceived = folderId === RECEIVED
@@ -251,14 +261,8 @@ export function DocumentsPage() {
     onSort: () => toggleSort(field),
   })
 
-  if (!company) return <Spinner className="py-20" />
-
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">
-      <div className="mb-5">
-        <CompanySwitcher />
-      </div>
-
+    <>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
         <aside className="rounded-xl border border-slate-200 bg-white p-2 lg:self-start">
           {foldersQuery.isLoading ? (
@@ -571,6 +575,6 @@ export function DocumentsPage() {
           </>
         }
       />
-    </div>
+    </>
   )
 }

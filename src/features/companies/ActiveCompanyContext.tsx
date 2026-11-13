@@ -9,6 +9,8 @@ interface ActiveCompanyValue {
   companies: Company[]
   company: Company | null
   isLoading: boolean
+  /** Há mais de uma empresa e nenhuma foi escolhida ainda: as telas pedem a seleção. */
+  needsSelection: boolean
   setCompany: (id: string) => void
 }
 
@@ -31,7 +33,9 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
   })
   const [selectedId, setSelectedId] = useState<string | null>(readStored)
 
-  const company = companies.find((c) => c.id === selectedId) ?? companies[0] ?? null
+  // Com uma empresa só, ela já vem selecionada. Com várias, o usuário escolhe (a escolha fica salva).
+  const company = companies.find((c) => c.id === selectedId) ?? (companies.length === 1 ? companies[0] : null)
+  const needsSelection = !isLoading && !company && companies.length > 1
 
   useEffect(() => {
     if (!company) return
@@ -51,7 +55,10 @@ export function ActiveCompanyProvider({ children }: { children: ReactNode }) {
     [queryClient],
   )
 
-  const value = useMemo(() => ({ companies, company, isLoading, setCompany }), [companies, company, isLoading, setCompany])
+  const value = useMemo(
+    () => ({ companies, company, isLoading, needsSelection, setCompany }),
+    [companies, company, isLoading, needsSelection, setCompany],
+  )
   return <ActiveCompanyContext.Provider value={value}>{children}</ActiveCompanyContext.Provider>
 }
 
