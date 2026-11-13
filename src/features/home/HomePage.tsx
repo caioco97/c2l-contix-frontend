@@ -1,4 +1,6 @@
+import { Navigate } from 'react-router-dom'
 import { Spinner } from '@/components/ui'
+import { useAuth } from '@/features/auth/AuthContext'
 import { CompanyBanner } from '@/features/companies/CompanyBanner'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
 import { useModuleAccess } from '@/features/companies/useModuleAccess'
@@ -8,9 +10,13 @@ import { NewsCard } from './components/NewsCard'
 import { RecentDocumentsCard } from './components/RecentDocumentsCard'
 
 export function HomePage() {
+  const { user } = useAuth()
   const { company } = useActiveCompany()
   const { can } = useModuleAccess()
   const documents = can('Documentos')
+
+  // O Início é o painel do cliente. O escritório entra direto no controle das empresas.
+  if (user && user.role !== 'Client') return <Navigate to="/empresas" replace />
 
   return (
     <>

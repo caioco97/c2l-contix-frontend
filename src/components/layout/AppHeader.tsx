@@ -9,25 +9,30 @@ import { useModuleAccess } from '@/features/companies/useModuleAccess'
 import type { PortalModule } from '@/types/domain'
 import { Logo } from './Logo'
 
+type Audience = 'office' | 'client'
+
 interface NavItem {
   to: string
   label: string
   icon: typeof Home
   end?: boolean
-  /** Só para o escritório (administrador e colaborador). */
-  officeOnly?: boolean
+  /**
+   * Quem vê o menu. O escritório (administrador e colaborador) só vê menus de controle das empresas;
+   * o cliente só vê o portal. Sem valor, aparece para os dois.
+   */
+  audience?: Audience
   /** Para o cliente: aparece se algum destes módulos estiver liberado. */
   modules?: PortalModule[]
 }
 
 const NAV: NavItem[] = [
-  { to: '/', label: 'Início', icon: Home, end: true },
+  { to: '/', label: 'Início', icon: Home, end: true, audience: 'client' },
+  { to: '/empresas', label: 'Empresas', icon: Building2, audience: 'office' },
   { to: '/documentos', label: 'Documentos', icon: FolderOpen, modules: ['Documentos'] },
+  { to: '/atendimento', label: 'Atendimento', icon: Headset, audience: 'office' },
   { to: '/certidoes', label: 'CND', icon: ShieldCheck },
-  { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid, modules: ['Solicitacoes', 'NFe'] },
-  { to: '/empresas', label: 'Empresas', icon: Building2, officeOnly: true },
-  { to: '/atendimento', label: 'Atendimento', icon: Headset, officeOnly: true },
-  { to: '/noticias', label: 'Notícias', icon: Megaphone, officeOnly: true },
+  { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid, audience: 'client', modules: ['Solicitacoes', 'NFe'] },
+  { to: '/noticias', label: 'Notícias', icon: Megaphone, audience: 'office' },
 ]
 
 export function AppHeader() {
@@ -35,8 +40,9 @@ export function AppHeader() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { can } = useModuleAccess()
+  const audience: Audience = user?.role === 'Client' ? 'client' : 'office'
   const nav = NAV.filter(
-    (n) => (!n.officeOnly || (user && user.role !== 'Client')) && (!n.modules || n.modules.some((m) => can(m))),
+    (n) => (!n.audience || n.audience === audience) && (!n.modules || n.modules.some((m) => can(m))),
   )
 
   const handleLogout = async () => {
