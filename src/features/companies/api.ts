@@ -228,7 +228,7 @@ export const companyKeys = {
 export const companiesApi = {
   /** Empresas às quais o usuário logado tem acesso (Cliente recebe só as vinculadas, com os módulos liberados). */
   async listMine(): Promise<Company[]> {
-    if (env.useMocks) return mockDelay(mockCompanies, 250)
+    if (env.useMocks) return mockDelay(mockCompanies.filter((c) => mockDetails.has(c.id)), 250)
     const { data } = await api.get<PagedDto<EmpresaDto>>('/empresas', { params: { page: 1, pageSize: 100 } })
     return data.items.map(toCompany)
   },
