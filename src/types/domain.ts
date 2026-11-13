@@ -516,3 +516,57 @@ export interface TaskInput {
   internalDueDate: string
   legalDueDate: string | null
 }
+
+/* ---------- Ficha do empregado ---------- */
+
+export interface EmployeeRecordOrigin {
+  requestId: string
+  number: number
+  typeCode: ServiceRequestTypeCode
+  status: ServiceRequestStatus
+  createdAt: string
+}
+
+export interface EmployeeVacation {
+  origin: EmployeeRecordOrigin
+  start: string
+  end: string
+  days: number
+  accrualStart: string
+  accrualEnd: string
+  sellTenDays: boolean
+  advance13th: boolean
+}
+
+export interface EmployeeLeave {
+  origin: EmployeeRecordOrigin
+  reason: string
+  start: string
+  expectedReturn: string | null
+  notes: string | null
+}
+
+export interface EmployeeTermination {
+  origin: EmployeeRecordOrigin
+  kind: string
+  date: string
+  notice: string
+}
+
+export interface EmployeePayrollItem {
+  origin: EmployeeRecordOrigin
+  period: string
+  item: string
+  quantity: number | null
+  amount: number | null
+}
+
+export interface EmployeeRecord {
+  employee: Employee
+  today: { vacation: EmployeeVacation | null; nextVacation: EmployeeVacation | null; leave: EmployeeLeave | null }
+  vacations: EmployeeVacation[]
+  leaves: EmployeeLeave[]
+  terminations: EmployeeTermination[]
+  payroll: EmployeePayrollItem[]
+  totalRequests: number
+}

@@ -11,7 +11,6 @@ import {
   EmptyState,
   Input,
   MenuItem,
-  Modal,
   Select,
   Skeleton,
   Table,
@@ -22,13 +21,12 @@ import {
   Tr,
   useToast,
 } from '@/components/ui'
-import { requestKeys, requestsApi, type RequestFilters } from '@/features/requests/api'
-import { Pager, RequestsTable } from '@/features/requests/components/RequestsTable'
 import { getErrorMessage } from '@/lib/api'
 import { formatDate } from '@/lib/format'
 import type { Employee, EmployeeInput, EmployeeStatus } from '@/types/domain'
 import { employeeKeys, employeesApi, type EmployeeFilters } from '../api'
 import { STATUS_OPTIONS, bondLabels, formatCpf, statusLabels } from '../meta'
+import { EmployeeDetailModal } from './EmployeeDetailModal'
 import { EmployeeFormModal } from './EmployeeFormModal'
 
 interface Props {
@@ -153,7 +151,7 @@ export function EmployeesPanel({ companyId, editable, requestHref }: Props) {
             </THead>
             <TBody>
               {data.map((e) => (
-                <Tr key={e.id}>
+                <Tr key={e.id} className="cursor-pointer" onClick={() => setViewing(e)}>
                   <Td>
                     <button type="button" className="text-left font-medium text-ink hover:underline" onClick={() => setViewing(e)}>
                       {e.name}
@@ -171,7 +169,7 @@ export function EmployeesPanel({ companyId, editable, requestHref }: Props) {
                     <Badge tone={statusLabels[e.status].tone}>{statusLabels[e.status].label}</Badge>
                     {e.terminationDate && <p className="mt-0.5 text-xs text-slate-500">em {formatDate(e.terminationDate)}</p>}
                   </Td>
-                  <Td className="text-right">
+                  <Td className="text-right" onClick={(ev) => ev.stopPropagation()}>
                     <DropdownMenu
                       trigger={({ toggle }) => (
                         <Button variant="ghost" size="icon" aria-label={`Ações de ${e.name}`} onClick={toggle}>
@@ -187,7 +185,7 @@ export function EmployeesPanel({ companyId, editable, requestHref }: Props) {
                               setViewing(e)
                             }}
                           >
-                            Ver solicitações
+                            Ver detalhes
                           </MenuItem>
                           {editable && (
                             <>
@@ -236,7 +234,7 @@ export function EmployeesPanel({ companyId, editable, requestHref }: Props) {
         onConfirm={() => removing && remove.mutate(removing)}
         onClose={() => setRemoving(null)}
       />
-      <EmployeeRequestsModal
+      <EmployeeDetailModal
         companyId={companyId}
         employee={viewing}
         office={editable}
@@ -244,54 +242,5 @@ export function EmployeesPanel({ companyId, editable, requestHref }: Props) {
         requestHref={requestHref}
       />
     </>
-  )
-}
-
-const PAGE = 10
-
-function EmployeeRequestsModal({
-  companyId,
-  employee,
-  office,
-  onClose,
-  requestHref,
-}: {
-  companyId: string
-  employee: Employee | null
-  office?: boolean
-  onClose: () => void
-  requestHref: (id: string) => string
-}) {
-  const [page, setPage] = useState(1)
-  const f: RequestFilters = { employeeId: employee?.id, sortBy: 'createdAt', sortDesc: true, page, pageSize: PAGE }
-  const { data, isLoading } = useQuery({
-    queryKey: requestKeys.list(companyId, f),
-    queryFn: () => requestsApi.list(companyId, f),
-    enabled: !!employee,
-  })
-  const items = data?.items ?? []
-
-  return (
-    <Modal
-      open={!!employee}
-      onClose={() => {
-        setPage(1)
-        onClose()
-      }}
-      title={employee?.name ?? ''}
-      description="Solicitações deste empregado, inclusive lançamentos de rubricas em que ele aparece."
-      size="lg"
-    >
-      {isLoading ? (
-        <Skeleton className="h-32" />
-      ) : items.length === 0 ? (
-        <EmptyState title="Nenhuma solicitação para este empregado." />
-      ) : (
-        <div className="-mx-5">
-          <RequestsTable items={items} office={office} hrefOf={(r) => requestHref(r.id)} />
-          <Pager page={page} total={data?.total ?? 0} pageSize={PAGE} onPage={setPage} />
-        </div>
-      )}
-    </Modal>
   )
 }

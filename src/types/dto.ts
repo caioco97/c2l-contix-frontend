@@ -492,3 +492,55 @@ export interface TarefaDto extends Omit<TarefaResumoDto, 'comentarios' | 'anexos
   transicoesPermitidas: StatusTarefaDto[]
   historico: InteracaoTarefaDto[]
 }
+
+export interface OrigemFichaDto {
+  solicitacaoId: string
+  numero: number
+  tipo: TipoSolicitacaoCodigo
+  status: StatusSolicitacaoDto
+  createdAt: string
+}
+
+export interface FeriasFichaDto {
+  origem: OrigemFichaDto
+  inicio: string
+  fim: string
+  dias: number
+  periodoAquisitivoInicio: string
+  periodoAquisitivoFim: string
+  abonoPecuniario: boolean
+  adiantamento13: boolean
+}
+
+export interface AfastamentoFichaDto {
+  origem: OrigemFichaDto
+  motivo: string
+  inicio: string
+  previsaoRetorno: string | null
+  observacoes: string | null
+}
+
+export interface DesligamentoFichaDto {
+  origem: OrigemFichaDto
+  tipoDesligamento: string
+  dataDesligamento: string
+  avisoPrevio: string
+}
+
+export interface RubricaFichaDto {
+  origem: OrigemFichaDto
+  competencia: string
+  rubrica: string
+  quantidade: number | null
+  valor: number | null
+}
+
+export interface FichaEmpregadoDto {
+  empregado: EmpregadoDto
+  hoje: { feriasEmCurso: FeriasFichaDto | null; proximasFerias: FeriasFichaDto | null; afastamentoEmCurso: AfastamentoFichaDto | null }
+  ferias: FeriasFichaDto[]
+  afastamentos: AfastamentoFichaDto[]
+  desligamentos: DesligamentoFichaDto[]
+  rubricas: RubricaFichaDto[]
+  totalSolicitacoes: number
+}
