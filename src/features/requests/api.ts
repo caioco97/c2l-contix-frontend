@@ -27,7 +27,7 @@ import type {
 
 /* ---------- Conversão DTO (API) <-> domínio (telas) ---------- */
 
-const STATUS_FROM_API: Record<StatusSolicitacaoDto, ServiceRequestStatus> = {
+export const STATUS_FROM_API: Record<StatusSolicitacaoDto, ServiceRequestStatus> = {
   Aberta: 'Open',
   EmAnalise: 'InAnalysis',
   AguardandoCliente: 'WaitingClient',

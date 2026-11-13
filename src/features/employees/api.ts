@@ -2,8 +2,18 @@ import { api } from '@/lib/api'
 import { env } from '@/config/env'
 import { mockDelay, mockError } from '@/lib/mock'
 import { mockEmployeeList } from '@/mocks/data'
-import type { Employee, EmployeeInput, EmployeeStatus } from '@/types/domain'
-import type { EmpregadoDto } from '@/types/dto'
+import { mockStore } from '@/mocks/store'
+import type {
+  Employee,
+  EmployeeInput,
+  EmployeeLeave,
+  EmployeeRecord,
+  EmployeeRecordOrigin,
+  EmployeeStatus,
+  EmployeeVacation,
+} from '@/types/domain'
+import type { AfastamentoFichaDto, EmpregadoDto, FeriasFichaDto, FichaEmpregadoDto, OrigemFichaDto } from '@/types/dto'
+import { STATUS_FROM_API } from '@/features/requests/api'
 
 /* ---------- Conversão DTO (API) <-> domínio ---------- */
 
@@ -23,6 +33,60 @@ function toEmployee(dto: EmpregadoDto): Employee {
     phone: dto.telefone,
     originRequestId: dto.solicitacaoOrigemId,
     createdAt: dto.createdAt,
+  }
+}
+
+const toOrigin = (o: OrigemFichaDto): EmployeeRecordOrigin => ({
+  requestId: o.solicitacaoId,
+  number: o.numero,
+  typeCode: o.tipo,
+  status: STATUS_FROM_API[o.status],
+  createdAt: o.createdAt,
+})
+
+const toVacation = (f: FeriasFichaDto): EmployeeVacation => ({
+  origin: toOrigin(f.origem),
+  start: f.inicio,
+  end: f.fim,
+  days: f.dias,
+  accrualStart: f.periodoAquisitivoInicio,
+  accrualEnd: f.periodoAquisitivoFim,
+  sellTenDays: f.abonoPecuniario,
+  advance13th: f.adiantamento13,
+})
+
+const toLeave = (a: AfastamentoFichaDto): EmployeeLeave => ({
+  origin: toOrigin(a.origem),
+  reason: a.motivo,
+  start: a.inicio,
+  expectedReturn: a.previsaoRetorno,
+  notes: a.observacoes,
+})
+
+function toRecord(dto: FichaEmpregadoDto): EmployeeRecord {
+  return {
+    employee: toEmployee(dto.empregado),
+    today: {
+      vacation: dto.hoje.feriasEmCurso && toVacation(dto.hoje.feriasEmCurso),
+      nextVacation: dto.hoje.proximasFerias && toVacation(dto.hoje.proximasFerias),
+      leave: dto.hoje.afastamentoEmCurso && toLeave(dto.hoje.afastamentoEmCurso),
+    },
+    vacations: dto.ferias.map(toVacation),
+    leaves: dto.afastamentos.map(toLeave),
+    terminations: dto.desligamentos.map((d) => ({
+      origin: toOrigin(d.origem),
+      kind: d.tipoDesligamento,
+      date: d.dataDesligamento,
+      notice: d.avisoPrevio,
+    })),
+    payroll: dto.rubricas.map((r) => ({
+      origin: toOrigin(r.origem),
+      period: r.competencia,
+      item: r.rubrica,
+      quantity: r.quantidade,
+      amount: r.valor,
+    })),
+    totalRequests: dto.totalSolicitacoes,
   }
 }
 
@@ -67,6 +131,7 @@ export interface EmployeeFilters {
 export const employeeKeys = {
   all: ['employees'] as const,
   list: (companyId: string, f: EmployeeFilters = {}) => ['employees', companyId, f] as const,
+  record: (companyId: string, id: string) => ['employees', companyId, 'record', id] as const,
 }
 
 export const employeesApi = {
@@ -76,6 +141,16 @@ export const employeesApi = {
       params: { busca: f.search?.trim() || undefined, situacao: f.status, ativos: f.activeOnly || undefined },
     })
     return data.map(toEmployee)
+  },
+
+  /** Ficha: cadastro, situação de hoje e histórico (férias, afastamentos, desligamento, rubricas). */
+  async record(companyId: string, id: string): Promise<EmployeeRecord> {
+    if (env.useMocks) {
+      const r = mockEmployees.record(companyId, id)
+      return r ? mockDelay(r, 250) : mockError(404, 'Empregado não encontrado.')
+    }
+    const { data } = await api.get<FichaEmpregadoDto>(`/empresas/${companyId}/empregados/${id}/ficha`)
+    return toRecord(data)
   },
 
   async create(companyId: string, input: EmployeeInput): Promise<Employee> {
@@ -139,6 +214,45 @@ export const mockEmployees = {
     }
     mockEmployees.store = current ? mockEmployees.store.map((e) => (e.id === id ? saved : e)) : [...mockEmployees.store, saved]
     return mockDelay(saved, 400)
+  },
+
+  /** Ficha simplificada a partir das solicitações simuladas. */
+  record(companyId: string, id: string): EmployeeRecord | undefined {
+    const employee = mockEmployees.find(companyId, id)
+    if (!employee) return undefined
+    const requests = mockStore.requests(companyId).filter((r) => r.employeeId === id)
+    const today = new Date().toISOString().slice(0, 10)
+    const vacations: EmployeeVacation[] = requests
+      .filter((r) => r.typeCode === 'AvisoFerias' || r.typeCode === 'CalculoFerias')
+      .map((r) => {
+        const d = r.data as Record<string, string | number | boolean>
+        const days = Number(d.dias)
+        const end = new Date(new Date(String(d.dataInicio)).getTime() + (days - 1) * 86_400_000).toISOString().slice(0, 10)
+        return {
+          origin: { requestId: r.id, number: r.number, typeCode: r.typeCode, status: r.status, createdAt: r.createdAt },
+          start: String(d.dataInicio),
+          end,
+          days,
+          accrualStart: String(d.periodoAquisitivoInicio),
+          accrualEnd: String(d.periodoAquisitivoFim),
+          sellTenDays: !!d.abonoPecuniario,
+          advance13th: !!d.adiantamento13,
+        }
+      })
+    const valid = vacations.filter((v) => v.origin.status !== 'Canceled')
+    return {
+      employee,
+      today: {
+        vacation: valid.find((v) => v.start <= today && v.end >= today) ?? null,
+        nextVacation: valid.filter((v) => v.start > today).sort((a, b) => a.start.localeCompare(b.start))[0] ?? null,
+        leave: null,
+      },
+      vacations,
+      leaves: [],
+      terminations: [],
+      payroll: [],
+      totalRequests: requests.length,
+    }
   },
 
   /** Como a API: grava o nome do cadastro junto do empregadoId nos dados da solicitação. */
