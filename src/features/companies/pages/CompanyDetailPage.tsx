@@ -5,7 +5,8 @@ import { ArrowLeft, Building2, FileUp, Pencil, Trash2, UserPlus } from 'lucide-r
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Skeleton, Tabs, useToast } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { getErrorMessage } from '@/lib/api'
-import { formatCnpj, formatDate } from '@/lib/format'
+import { formatDate } from '@/lib/format'
+import { formatCep, formatCpfCnpj, formatIe, formatPhone } from '@/lib/br'
 import type { CompanyDetail, CompanyInput, CompanyPanel } from '@/types/domain'
 import { EmployeesPanel } from '@/features/employees/components/EmployeesPanel'
 import { useActiveCompany } from '../ActiveCompanyContext'
@@ -107,7 +108,7 @@ export function CompanyDetailPage() {
           </div>
           <p className="text-sm text-slate-500">
             {c.tradeName ? `${c.legalName} · ` : ''}
-            <span className="font-mono">{formatCnpj(c.document)}</span> · {regimeLabel(c.taxRegime)}
+            <span className="font-mono">{formatCpfCnpj(c.document)}</span> · {regimeLabel(c.taxRegime)}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -231,7 +232,7 @@ function Overview({
         a.complement,
         a.district,
         [a.city, a.state].filter(Boolean).join(' / '),
-        a.zip,
+        a.zip && `CEP ${formatCep(a.zip)}`,
       ]
         .filter(Boolean)
         .join(' · ')
@@ -241,12 +242,12 @@ function Overview({
     ['Razão social', c.legalName],
     ['Nome fantasia', c.tradeName],
     ['Apelido', c.nickname],
-    ['CNPJ / CPF', formatCnpj(c.document)],
-    ['Inscrição estadual', c.stateRegistration],
+    ['CNPJ / CPF', formatCpfCnpj(c.document)],
+    ['Inscrição estadual', c.stateRegistration && formatIe(c.stateRegistration)],
     ['Inscrição municipal', c.cityRegistration],
     ['Regime tributário', regimeLabel(c.taxRegime)],
     ['E-mail', c.email],
-    ['Telefone', c.phone],
+    ['Telefone', c.phone && formatPhone(c.phone)],
     ['Endereço', address],
     ['Cliente desde', formatDate(c.createdAt)],
   ]

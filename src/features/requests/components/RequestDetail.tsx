@@ -17,6 +17,7 @@ import { saveBlob } from '@/features/documents/api'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/cn'
 import { formatBytes, formatDate, formatDateTime } from '@/lib/format'
+import { formatCep, formatCpf, formatPhone, formatPis } from '@/lib/br'
 import type { RequestEvent, ServiceRequestDetail, ServiceRequestStatus } from '@/types/domain'
 import { requestKeys, requestsApi } from '../api'
 import { dataLabels, departmentLabels, enumLabels, statusActions, statusMeta } from '../meta'
@@ -143,12 +144,17 @@ function formatValue(key: string, value: unknown): string {
       : value.toLocaleString('pt-BR')
   if (typeof value === 'string') {
     if (key === 'competencia') return formatDate(value, 'MM/yyyy')
+    if (key === 'cpf') return formatCpf(value)
+    if (key === 'pis') return formatPis(value)
+    if (key === 'telefone') return formatPhone(value)
+    if (key === 'cep') return formatCep(value)
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return formatDate(value)
     return enumLabels[value] ?? value
   }
   if (typeof value === 'object')
-    return Object.values(value as Record<string, unknown>)
-      .filter(Boolean)
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => Boolean(v))
+      .map(([k, v]) => (k === 'cep' ? `CEP ${formatCep(String(v))}` : String(v)))
       .join(', ')
   return String(value)
 }

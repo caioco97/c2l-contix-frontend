@@ -3,8 +3,9 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { z } from 'zod'
-import { Button, FormField, Input, Modal, Select } from '@/components/ui'
-import { cpfValido } from '@/features/requests/form/schema'
+import { Button, FormField, Input, MaskedInput, Modal, Select, type MaskKind } from '@/components/ui'
+import { formatPhone, isValidCpf } from '@/lib/br'
+import { br } from '@/lib/zodBr'
 import type { ProblemDetails } from '@/types/api'
 import type { Employee, EmployeeInput } from '@/types/domain'
 import { employeeErrorField } from '../api'
@@ -14,7 +15,7 @@ const optional = (max: number) => z.string().max(max, `Máximo de ${max} caracte
 const schema = z
   .object({
     name: z.string().trim().min(1, 'Informe o nome.').max(150, 'Máximo de 150 caracteres.'),
-    cpf: z.string().refine((v) => !v.trim() || cpfValido(v), 'CPF inválido.'),
+    cpf: z.string().refine((v) => !v.trim() || isValidCpf(v), 'CPF inválido.'),
     registration: optional(30),
     role: optional(100),
     bond: z.enum(['Empregado', 'Contribuinte', 'Estagiario']),
@@ -22,7 +23,7 @@ const schema = z
     admissionDate: z.string(),
     terminationDate: z.string(),
     email: z.union([z.literal(''), z.email('E-mail inválido.').max(200)]),
-    phone: optional(30),
+    phone: br.telefone(),
   })
   .refine((v) => v.status !== 'Desligado' || !!v.terminationDate, {
     path: ['terminationDate'],
@@ -44,7 +45,7 @@ function defaults(e?: Employee | null): EmployeeInput {
     admissionDate: e?.admissionDate ?? '',
     terminationDate: e?.terminationDate ?? '',
     email: e?.email ?? '',
-    phone: e?.phone ?? '',
+    phone: formatPhone(e?.phone),
   }
 }
 
@@ -85,18 +86,15 @@ export function EmployeeFormModal({ open, employee, onClose, onSubmit }: Props) 
   const field = (
     name: keyof EmployeeInput,
     label: string,
-    props: { required?: boolean; className?: string; type?: string; placeholder?: string; inputMode?: 'numeric' } = {},
+    props: { required?: boolean; className?: string; type?: string; placeholder?: string; mask?: MaskKind } = {},
   ) => (
     <div className={props.className}>
       <FormField label={label} htmlFor={`employee-${name}`} error={errors[name]?.message} required={props.required}>
-        <Input
-          id={`employee-${name}`}
-          type={props.type}
-          placeholder={props.placeholder}
-          inputMode={props.inputMode}
-          invalid={!!errors[name]}
-          {...register(name)}
-        />
+        {props.mask ? (
+          <MaskedInput id={`employee-${name}`} mask={props.mask} invalid={!!errors[name]} {...register(name)} />
+        ) : (
+          <Input id={`employee-${name}`} type={props.type} placeholder={props.placeholder} invalid={!!errors[name]} {...register(name)} />
+        )}
       </FormField>
     </div>
   )
@@ -122,7 +120,7 @@ export function EmployeeFormModal({ open, employee, onClose, onSubmit }: Props) 
       <form onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-6">
         {field('name', 'Nome completo', { required: true, className: 'sm:col-span-4' })}
         {field('registration', 'Matrícula', { className: 'sm:col-span-2' })}
-        {field('cpf', 'CPF', { className: 'sm:col-span-2', placeholder: '000.000.000-00', inputMode: 'numeric' })}
+        {field('cpf', 'CPF', { className: 'sm:col-span-2', mask: 'cpf' })}
         {field('role', 'Cargo / função', { className: 'sm:col-span-4' })}
         <div className="sm:col-span-3">
           <FormField label="Vínculo" htmlFor="employee-bond" required>
@@ -138,7 +136,7 @@ export function EmployeeFormModal({ open, employee, onClose, onSubmit }: Props) 
         {status === 'Desligado' &&
           field('terminationDate', 'Data do desligamento', { className: 'sm:col-span-3', type: 'date', required: true })}
         {field('email', 'E-mail', { className: 'sm:col-span-3', type: 'email' })}
-        {field('phone', 'Telefone', { className: 'sm:col-span-3', inputMode: 'numeric' })}
+        {field('phone', 'Telefone / celular', { className: 'sm:col-span-3', mask: 'phone' })}
         <button type="submit" hidden />
       </form>
     </Modal>

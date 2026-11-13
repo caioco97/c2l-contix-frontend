@@ -1,3 +1,4 @@
+import { digits, formatCpf as formatCpfMask } from '@/lib/br'
 import type { EmployeeBond, EmployeeStatus } from '@/types/domain'
 
 export const bondLabels: Record<EmployeeBond, string> = {
@@ -15,8 +16,8 @@ export const statusLabels: Record<EmployeeStatus, { label: string; tone: 'succes
 export const BOND_OPTIONS = (Object.keys(bondLabels) as EmployeeBond[]).map((v) => ({ value: v, label: bondLabels[v] }))
 export const STATUS_OPTIONS = (Object.keys(statusLabels) as EmployeeStatus[]).map((v) => ({ value: v, label: statusLabels[v].label }))
 
+/** CPF com máscara quando completo; senão, como veio. */
 export function formatCpf(cpf: string | null | undefined) {
   if (!cpf) return ''
-  const d = cpf.replace(/\D/g, '')
-  return d.length === 11 ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}` : cpf
+  return digits(cpf).length === 11 ? formatCpfMask(cpf) : cpf
 }
