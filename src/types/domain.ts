@@ -170,6 +170,7 @@ export interface DocumentEvent {
   userName: string
   isOffice: boolean
   detail: string | null
+  ip: string | null
 }
 
 /** Documento com vencimento, exibido no calendário. */

@@ -187,6 +187,8 @@ export interface EventoDocumentoDto {
   usuarioNome: string
   ehDoEscritorio: boolean
   detalhe: string | null
+  /** IP de origem da ação. Ausente em registros antigos ou em APIs anteriores ao campo. */
+  ip?: string | null
 }
 
 export interface VencimentoDto {
