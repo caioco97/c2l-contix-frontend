@@ -10,7 +10,6 @@ import {
   EmptyState,
   Select,
   Skeleton,
-  Spinner,
   Table,
   TBody,
   Td,
@@ -21,7 +20,7 @@ import {
   useToast,
 } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
-import { CompanyBanner } from '@/features/companies/CompanyBanner'
+import { CompanyContextBar, CompanyGate } from '@/features/companies/CompanySelector'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/cn'
@@ -61,7 +60,7 @@ export function CndPage() {
 
   return (
     <>
-      <CompanyBanner />
+      <CompanyContextBar />
       <main className="mx-auto max-w-7xl space-y-4 px-4 py-6 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -82,7 +81,7 @@ export function CndPage() {
         {isOffice && (
           <Tabs
             items={[
-              { value: 'company', label: company ? `Empresa: ${company.tradeName}` : 'Empresa' },
+              { value: 'company', label: 'Certidões da empresa' },
               { value: 'dashboard', label: 'Painel de vencimentos' },
             ]}
             value={view}
@@ -98,15 +97,17 @@ export function CndPage() {
               setView('company')
             }}
           />
-        ) : !company ? (
-          <Spinner />
         ) : (
-          <CompanyCnds
-            companyId={company.id}
-            isOffice={isOffice}
-            onEdit={(c) => setEditing({ companyId: company.id, companyName: company.tradeName, cnd: c })}
-            onRenew={(c) => setEditing({ companyId: company.id, companyName: company.tradeName, type: c.type })}
-          />
+          <CompanyGate purpose="consultar as certidões negativas">
+            {(company) => (
+              <CompanyCnds
+                companyId={company.id}
+                isOffice={isOffice}
+                onEdit={(c) => setEditing({ companyId: company.id, companyName: company.tradeName, cnd: c })}
+                onRenew={(c) => setEditing({ companyId: company.id, companyName: company.tradeName, type: c.type })}
+              />
+            )}
+          </CompanyGate>
         )}
       </main>
 
