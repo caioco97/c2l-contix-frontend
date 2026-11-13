@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Megaphone, Paperclip } from 'lucide-react'
 import { Card, CardBody, CardHeader, EmptyState, Skeleton, Tabs } from '@/components/ui'
@@ -33,6 +34,28 @@ export function NewsCard({ companyId }: { companyId: string }) {
     setOpen(item)
     if (!item.isRead) markRead.mutate(item.id)
   }
+
+  // Link do aviso de nova notícia: /?noticia={id} abre a notícia direto.
+  const [params, setParams] = useSearchParams()
+  const linked = params.get('noticia')
+  const { data: linkedItem, isError: linkedError } = useQuery({
+    queryKey: newsKeys.detail(companyId, linked ?? ''),
+    queryFn: () => newsApi.get(companyId, linked!),
+    enabled: !!linked,
+    retry: false,
+  })
+  useEffect(() => {
+    if (!linked || (!linkedItem && !linkedError)) return
+    if (linkedItem) openItem(linkedItem)
+    setParams(
+      (p) => {
+        p.delete('noticia')
+        return p
+      },
+      { replace: true },
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linked, linkedItem, linkedError])
 
   return (
     <Card>

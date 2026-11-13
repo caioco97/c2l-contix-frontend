@@ -3,16 +3,20 @@ import { BarChart3, ClipboardList, Inbox, ReceiptText } from 'lucide-react'
 import { Avatar } from '@/components/ui'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
 import { cn } from '@/lib/cn'
+import { useModuleAccess } from '@/features/companies/useModuleAccess'
+import type { PortalModule } from '@/types/domain'
 
-const LINKS = [
-  { to: '/portal', label: 'Solicitação de Serviço', icon: ClipboardList, end: true },
-  { to: '/portal/solicitacoes', label: 'Minhas solicitações', icon: Inbox },
-  { to: '/portal/nfe', label: 'Manifestação de NF-e', icon: ReceiptText },
-  { to: '/portal/relatorios', label: 'Relatórios', icon: BarChart3 },
+const LINKS: { to: string; label: string; icon: typeof Inbox; end?: boolean; module: PortalModule }[] = [
+  { to: '/portal', label: 'Solicitação de Serviço', icon: ClipboardList, end: true, module: 'Solicitacoes' },
+  { to: '/portal/solicitacoes', label: 'Minhas solicitações', icon: Inbox, module: 'Solicitacoes' },
+  { to: '/portal/nfe', label: 'Manifestação de NF-e', icon: ReceiptText, module: 'NFe' },
+  { to: '/portal/relatorios', label: 'Relatórios', icon: BarChart3, module: 'Solicitacoes' },
 ]
 
 export function PortalSidebar() {
   const { company } = useActiveCompany()
+  const { can } = useModuleAccess()
+  const links = LINKS.filter((l) => can(l.module))
   return (
     <aside className="rounded-xl border border-slate-200 bg-white lg:self-start">
       {company && (
@@ -26,7 +30,7 @@ export function PortalSidebar() {
         </div>
       )}
       <nav aria-label="Portal do cliente" className="flex gap-1 overflow-x-auto p-2 lg:flex-col">
-        {LINKS.map(({ to, label, icon: Icon, end }) => (
+        {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
