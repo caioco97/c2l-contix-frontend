@@ -15,6 +15,9 @@
   --color-brand-900: #144440;
   --color-brand-950: #062826;
 
+  /* Cor de destaque (faixa do topo e detalhes). A empresa pode trocar pela cor secundária dela. */
+  --color-accent: #42baa8;
+
   --color-ink: #1b2430;
   --color-surface: #f4f6f8;
 }

@@ -1,10 +1,12 @@
 import { Outlet } from 'react-router-dom'
 import { ActiveCompanyProvider } from '@/features/companies/ActiveCompanyContext'
+import { CompanyThemeProvider } from '@/features/companies/branding/CompanyThemeProvider'
 import { AppHeader } from './AppHeader'
 
 export function AppLayout() {
   return (
     <ActiveCompanyProvider>
+      <CompanyThemeProvider />
       <div className="flex min-h-full flex-col">
         <AppHeader />
         <div className="flex-1">

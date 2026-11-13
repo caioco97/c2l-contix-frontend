@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Building2, FileUp, Pencil, Trash2, UserPlus } from 'lucide-react'
+import { ArrowLeft, Building2, FileUp, Palette, Pencil, Trash2, UserPlus } from 'lucide-react'
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Skeleton, Tabs, useToast } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { getErrorMessage } from '@/lib/api'
@@ -17,8 +17,20 @@ import { DeleteCompanyModal } from '../components/DeleteCompanyModal'
 import { CndTab, DocumentsTab, HistoryTab, RequestsTab } from '../components/CompanyActivityTabs'
 import { regimeLabel, statusOf } from '../meta'
 import { CompanyTasksTab } from '@/features/tasks/components/CompanyTasksTab'
+import { CompanyBrandingTab } from '../branding/CompanyBrandingTab'
+import { CompanyLogo } from '../branding/CompanyLogo'
 
-const TABS = ['dados', 'usuarios', 'empregados', 'documentos', 'solicitacoes', 'tarefas', 'cnd', 'historico'] as const
+const TABS = [
+  'dados',
+  'usuarios',
+  'visual',
+  'empregados',
+  'documentos',
+  'solicitacoes',
+  'tarefas',
+  'cnd',
+  'historico',
+] as const
 type Tab = (typeof TABS)[number]
 
 /** Página da empresa para o escritório: cadastro, usuários do portal e tudo o que aconteceu com ela. */
@@ -101,15 +113,18 @@ export function CompanyDetailPage() {
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate text-xl font-semibold text-ink">{c.tradeName || c.legalName}</h1>
-            <Badge tone={s.tone}>{s.label}</Badge>
+        <div className="flex min-w-0 items-center gap-3">
+          <CompanyLogo company={c} className="h-12 w-12" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="truncate text-xl font-semibold text-ink">{c.tradeName || c.legalName}</h1>
+              <Badge tone={s.tone}>{s.label}</Badge>
+            </div>
+            <p className="text-sm text-slate-500">
+              {c.tradeName ? `${c.legalName} · ` : ''}
+              <span className="font-mono">{formatCpfCnpj(c.document)}</span> · {regimeLabel(c.taxRegime)}
+            </p>
           </div>
-          <p className="text-sm text-slate-500">
-            {c.tradeName ? `${c.legalName} · ` : ''}
-            <span className="font-mono">{formatCpfCnpj(c.document)}</span> · {regimeLabel(c.taxRegime)}
-          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => openAs('/documentos')}>
@@ -138,6 +153,7 @@ export function CompanyDetailPage() {
         items={[
           { value: 'dados', label: 'Visão geral' },
           { value: 'usuarios', label: 'Usuários', count: p?.pendingInvites },
+          { value: 'visual', label: 'Identidade visual' },
           { value: 'empregados', label: 'Empregados' },
           { value: 'documentos', label: 'Documentos', count: p?.receivedUnread },
           { value: 'solicitacoes', label: 'Solicitações', count: p?.openRequests },
@@ -147,10 +163,18 @@ export function CompanyDetailPage() {
         ]}
       />
 
-      {tab === 'dados' && <Overview company={c} panel={p} loading={panel.isLoading} onEdit={() => setEditing(true)} onTab={setTab} />}
-      {tab === 'usuarios' && (
-        <CompanyUsersTab companyId={companyId} companyName={c.legalName} inviting={inviting} onInvitingChange={setInviting} />
+      {tab === 'dados' && (
+        <Overview company={c} panel={p} loading={panel.isLoading} onEdit={() => setEditing(true)} onTab={setTab} />
       )}
+      {tab === 'usuarios' && (
+        <CompanyUsersTab
+          companyId={companyId}
+          companyName={c.legalName}
+          inviting={inviting}
+          onInvitingChange={setInviting}
+        />
+      )}
+      {tab === 'visual' && <CompanyBrandingTab key={c.id} company={c} />}
       {tab === 'empregados' && (
         <EmployeesPanel companyId={companyId} editable requestHref={(id) => `/atendimento/${companyId}/${id}`} />
       )}
@@ -164,7 +188,12 @@ export function CompanyDetailPage() {
         open={editing}
         company={c}
         onClose={() => setEditing(false)}
-        onSubmit={(input) => update.mutateAsync(input).then(() => undefined, () => undefined)}
+        onSubmit={(input) =>
+          update.mutateAsync(input).then(
+            () => undefined,
+            () => undefined,
+          )
+        }
       />
 
       <DeleteCompanyModal
@@ -266,7 +295,11 @@ function Overview({
             {loading ? (
               <Skeleton className="mt-2 h-7 w-12" />
             ) : (
-              <p className={t.alert ? 'mt-1 text-2xl font-semibold text-red-600' : 'mt-1 text-2xl font-semibold text-ink'}>
+              <p
+                className={
+                  t.alert ? 'mt-1 text-2xl font-semibold text-red-600' : 'mt-1 text-2xl font-semibold text-ink'
+                }
+              >
                 {t.value ?? 0}
               </p>
             )}
@@ -274,6 +307,8 @@ function Overview({
           </button>
         ))}
       </div>
+
+      <BrandingSummary company={c} onCustomize={() => onTab('visual')} />
 
       <Card>
         <CardHeader
@@ -296,5 +331,40 @@ function Overview({
         </CardBody>
       </Card>
     </div>
+  )
+}
+
+/** Resumo da identidade visual na visão geral, com atalho para personalizar. */
+function BrandingSummary({ company: c, onCustomize }: { company: CompanyDetail; onCustomize: () => void }) {
+  const b = c.branding
+  const customized = !!(b.primaryColor || b.secondaryColor || b.hasLogo)
+  return (
+    <Card className="flex flex-wrap items-center gap-4 px-5 py-4">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+        <Palette className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-ink">Identidade visual do portal</p>
+        <p className="text-sm text-slate-500">
+          {customized
+            ? 'O portal desta empresa usa logotipo e cores próprios.'
+            : 'O portal usa o visual padrão. Personalize com o logotipo e as cores da empresa.'}
+        </p>
+      </div>
+      {customized && (
+        <div className="flex items-center gap-1.5" aria-hidden>
+          {[b.primaryColor, b.secondaryColor].filter(Boolean).map((color) => (
+            <span
+              key={color}
+              className="h-6 w-6 rounded-full border-2 border-white shadow ring-1 ring-slate-200"
+              style={{ background: color! }}
+            />
+          ))}
+        </div>
+      )}
+      <Button variant="secondary" size="sm" onClick={onCustomize}>
+        {customized ? 'Editar' : 'Personalizar'}
+      </Button>
+    </Card>
   )
 }

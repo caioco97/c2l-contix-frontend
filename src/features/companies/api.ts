@@ -7,6 +7,7 @@ import type { PagedResult } from '@/types/api'
 import type {
   Address,
   Company,
+  CompanyBranding,
   CompanyDetail,
   CompanyHistoryItem,
   CompanyInput,
@@ -23,6 +24,7 @@ import type {
   EmpresaDto,
   EnderecoDto,
   HistoricoEmpresaDto,
+  IdentidadeVisualDto,
   ItemHistoricoEmpresaDto,
   PagedDto,
   PainelEmpresaDto,
@@ -30,6 +32,13 @@ import type {
 } from '@/types/dto'
 
 /* ---------- Conversão DTO (API) <-> domínio ---------- */
+
+const NO_BRANDING: CompanyBranding = { primaryColor: null, secondaryColor: null, hasLogo: false, logoVersion: null }
+
+const toBranding = (d: IdentidadeVisualDto | null | undefined): CompanyBranding =>
+  d
+    ? { primaryColor: d.corPrimaria, secondaryColor: d.corSecundaria, hasLogo: d.possuiLogo, logoVersion: d.logoVersao }
+    : NO_BRANDING
 
 function toCompany(dto: EmpresaDto): Company {
   return {
@@ -39,6 +48,7 @@ function toCompany(dto: EmpresaDto): Company {
     nickname: dto.apelido ?? '',
     document: dto.documento,
     modules: dto.modulos ?? null,
+    branding: toBranding(dto.identidadeVisual),
   }
 }
 
@@ -80,6 +90,7 @@ function toDetail(dto: EmpresaDetalheDto): CompanyDetail {
     phone: dto.telefone,
     address: toAddress(dto.endereco),
     createdAt: dto.createdAt,
+    branding: toBranding(dto.identidadeVisual),
   }
 }
 
@@ -180,9 +191,11 @@ const mockDetails = new Map<string, CompanyDetail>(
       phone: null,
       address: null,
       createdAt: now(),
+      branding: NO_BRANDING,
     },
   ]),
 )
+const mockLogos = new Map<string, Blob>()
 const mockUsers = new Map<string, PortalUser[]>([
   [
     'c-1',
@@ -226,12 +239,17 @@ export const companyKeys = {
   panel: (id: string) => ['companies', 'panel', id] as const,
   history: (id: string, category?: HistoryCategory) => ['companies', 'history', id, category ?? 'all'] as const,
   users: (id: string) => ['companies', 'users', id] as const,
+  logo: (id: string, version: string | null) => ['companies', 'logo', id, version] as const,
 }
 
 export const companiesApi = {
   /** Empresas às quais o usuário logado tem acesso (Cliente recebe só as vinculadas, com os módulos liberados). */
   async listMine(): Promise<Company[]> {
-    if (env.useMocks) return mockDelay(mockCompanies, 250)
+    if (env.useMocks)
+      return mockDelay(
+        mockCompanies.map((c) => ({ ...c, branding: mockDetails.get(c.id)?.branding ?? NO_BRANDING })),
+        250,
+      )
     const { data } = await api.get<PagedDto<EmpresaDto>>('/empresas', { params: { page: 1, pageSize: 100 } })
     return data.items.map(toCompany)
   },
@@ -271,7 +289,7 @@ export const companiesApi = {
 
   async create(input: CompanyInput): Promise<CompanyDetail> {
     if (env.useMocks) {
-      const c: CompanyDetail = { ...input, id: crypto.randomUUID(), createdAt: now() }
+      const c: CompanyDetail = { ...input, id: crypto.randomUUID(), createdAt: now(), branding: NO_BRANDING }
       mockDetails.set(c.id, c)
       return mockDelay(c)
     }
@@ -287,6 +305,59 @@ export const companiesApi = {
     }
     const { data } = await api.put<EmpresaDetalheDto>(`/empresas/${id}`, toRequest(input))
     return toDetail(data)
+  },
+
+  /* ---------- Identidade visual (portal do cliente) ---------- */
+
+  async saveColors(
+    id: string,
+    colors: { primaryColor: string | null; secondaryColor: string | null },
+  ): Promise<CompanyBranding> {
+    if (env.useMocks) {
+      const c = mockDetails.get(id)!
+      c.branding = { ...c.branding, ...colors }
+      return mockDelay(c.branding)
+    }
+    const { data } = await api.put<IdentidadeVisualDto>(`/empresas/${id}/identidade-visual`, {
+      corPrimaria: colors.primaryColor,
+      corSecundaria: colors.secondaryColor,
+    })
+    return toBranding(data)
+  },
+
+  /** Envia ou troca o logotipo (PNG, JPG ou WEBP de até 1 MB). */
+  async uploadLogo(id: string, file: File): Promise<CompanyBranding> {
+    if (env.useMocks) {
+      const c = mockDetails.get(id)!
+      mockLogos.set(id, file)
+      c.branding = { ...c.branding, hasLogo: true, logoVersion: String(Date.now()) }
+      return mockDelay(c.branding)
+    }
+    const form = new FormData()
+    form.append('arquivo', file)
+    const { data } = await api.put<IdentidadeVisualDto>(`/empresas/${id}/identidade-visual/logo`, form)
+    return toBranding(data)
+  },
+
+  async removeLogo(id: string): Promise<CompanyBranding> {
+    if (env.useMocks) {
+      const c = mockDetails.get(id)!
+      mockLogos.delete(id)
+      c.branding = { ...c.branding, hasLogo: false, logoVersion: null }
+      return mockDelay(c.branding)
+    }
+    const { data } = await api.delete<IdentidadeVisualDto>(`/empresas/${id}/identidade-visual/logo`)
+    return toBranding(data)
+  },
+
+  /** Logotipo da empresa (exige o token, por isso vem como blob). */
+  async logo(id: string): Promise<Blob> {
+    if (env.useMocks) {
+      const blob = mockLogos.get(id)
+      return blob ? mockDelay(blob, 100) : mockError(404, 'Logotipo não encontrado.')
+    }
+    const { data } = await api.get<Blob>(`/empresas/${id}/identidade-visual/logo`, { responseType: 'blob' })
+    return data
   },
 
   /** Exclusão lógica (somente administrador). */
@@ -401,7 +472,10 @@ export const companiesApi = {
       Object.assign(u, { modules: p.modules, allFolders: p.allFolders, folderIds: p.allFolders ? [] : p.folderIds })
       return mockDelay(u)
     }
-    const { data } = await api.put<UsuarioPortalDto>(`/empresas/${companyId}/usuarios/${userId}`, toPermissionsRequest(p))
+    const { data } = await api.put<UsuarioPortalDto>(
+      `/empresas/${companyId}/usuarios/${userId}`,
+      toPermissionsRequest(p),
+    )
     return toPortalUser(data)
   },
 
@@ -409,7 +483,8 @@ export const companiesApi = {
     if (env.useMocks) {
       const list = usersOf(companyId)
       const u = list.find((x) => x.id === userId)!
-      if (u.otherCompanies === 0) return mockError(409, 'Esta é a única empresa do usuário. Inative o acesso dele em vez de remover o vínculo.')
+      if (u.otherCompanies === 0)
+        return mockError(409, 'Esta é a única empresa do usuário. Inative o acesso dele em vez de remover o vínculo.')
       list.splice(list.indexOf(u), 1)
       return mockDelay(undefined)
     }

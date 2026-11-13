@@ -6,6 +6,8 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
 import { useModuleAccess } from '@/features/companies/useModuleAccess'
+import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
+import { useCompanyLogoUrl } from '@/features/companies/branding/useCompanyLogoUrl'
 import type { PortalModule } from '@/types/domain'
 import { Logo } from './Logo'
 
@@ -42,6 +44,9 @@ export function AppHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { can } = useModuleAccess()
   const audience: Audience = user?.role === 'Client' ? 'client' : 'office'
+  // No portal do cliente, o logotipo da empresa selecionada substitui o do escritório.
+  const { company } = useActiveCompany()
+  const companyLogo = useCompanyLogoUrl(audience === 'client' ? company?.id : undefined, company?.branding)
   const nav = NAV.filter(
     (n) => (!n.audience || n.audience === audience) && (!n.modules || n.modules.some((m) => can(m))),
   )
@@ -52,7 +57,8 @@ export function AppHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-[0_1px_2px_rgb(15_23_42/0.04)] backdrop-blur">
+      <div aria-hidden className="h-1 bg-gradient-to-r from-brand-600 to-accent" />
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6">
         <Button
           variant="ghost"
@@ -66,7 +72,13 @@ export function AppHeader() {
         </Button>
 
         <NavLink to="/" aria-label="Contix — Início" className="shrink-0">
-          {user?.office.logoUrl ? (
+          {companyLogo ? (
+            <img
+              src={companyLogo}
+              alt={company?.tradeName || company?.legalName}
+              className="h-10 w-auto max-w-44 object-contain"
+            />
+          ) : user?.office.logoUrl ? (
             <img src={user.office.logoUrl} alt={user.office.name} className="h-10 w-auto" />
           ) : (
             <Logo />

@@ -42,6 +42,14 @@ export interface EmpresaDto {
   situacao?: string
   /** Só para o usuário do cliente: módulos liberados nesta empresa. */
   modulos?: ModuloPortalDto[] | null
+  identidadeVisual?: IdentidadeVisualDto | null
+}
+
+export interface IdentidadeVisualDto {
+  corPrimaria: string | null
+  corSecundaria: string | null
+  possuiLogo: boolean
+  logoVersao: string | null
 }
 
 export type ModuloPortalDto = 'Documentos' | 'Solicitacoes' | 'NFe'
@@ -70,6 +78,7 @@ export interface EmpresaDetalheDto {
   telefone: string | null
   endereco: EnderecoDto | null
   createdAt: string
+  identidadeVisual?: IdentidadeVisualDto | null
 }
 
 export interface PainelEmpresaDto {
