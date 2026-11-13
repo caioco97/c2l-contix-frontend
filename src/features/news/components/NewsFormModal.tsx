@@ -5,13 +5,15 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, parseISO } from 'date-fns'
 import { ImagePlus, Undo2, X } from 'lucide-react'
-import { Button, Checkbox, FormField, Input, Modal, Select, Spinner, Textarea } from '@/components/ui'
+import { Button, Checkbox, FormField, Input, Modal, Select, Spinner } from '@/components/ui'
 import { companiesApi } from '@/features/companies/api'
 import { officeNewsApi, newsKeys } from '@/features/news/api'
 import { NEWS_AUDIENCES, TAX_REGIMES } from '@/features/news/meta'
+import { RichTextEditor } from './RichTextEditor'
 import { AttachmentPicker } from '@/features/requests/components/AttachmentPicker'
 import { cn } from '@/lib/cn'
 import { formatBytes } from '@/lib/format'
+import { htmlToText, toEditorHtml } from '@/lib/richText'
 import { useBlobUrl, useObjectUrl } from '@/lib/useBlobUrl'
 import type { NewsInput, OfficeNewsDetail } from '@/types/domain'
 
@@ -22,7 +24,10 @@ const schema = z
   .object({
     title: z.string().trim().min(1, 'Informe o título.').max(200, 'Máximo de 200 caracteres.'),
     summary: z.string().max(500, 'Máximo de 500 caracteres.'),
-    content: z.string().trim().min(1, 'Escreva o conteúdo.').max(20_000, 'Máximo de 20.000 caracteres.'),
+    content: z
+      .string()
+      .refine((html) => htmlToText(html).length > 0, 'Escreva o conteúdo.')
+      .refine((html) => html.length <= 20_000, 'O conteúdo, com a formatação, pode ter no máximo 20.000 caracteres.'),
     publishAt: z.string(),
     expiresAt: z.string(),
     audience: z.enum(['Todos', 'EmpresasSelecionadas', 'RegimeTributario']),
@@ -57,7 +62,7 @@ function defaults(n?: OfficeNewsDetail): FormValues {
   return {
     title: n?.title ?? '',
     summary: n?.summary ?? '',
-    content: n?.content ?? '',
+    content: toEditorHtml(n?.content),
     publishAt: toLocal(n?.publishAt),
     expiresAt: toLocal(n?.expiresAt),
     audience: n?.audience ?? 'Todos',
@@ -113,7 +118,7 @@ export function NewsFormModal({ open, newsId, onClose, onSubmit }: Props) {
     await onSubmit({
       title: v.title.trim(),
       summary: v.summary.trim() || undefined,
-      content: v.content.trim(),
+      content: v.content,
       publishAt: toIso(v.publishAt),
       expiresAt: toIso(v.expiresAt),
       audience: v.audience,
@@ -165,10 +170,23 @@ export function NewsFormModal({ open, newsId, onClose, onSubmit }: Props) {
             label="Conteúdo"
             htmlFor="news-content"
             error={errors.content?.message}
-            hint="Separe os parágrafos com uma linha em branco."
+            hint="Use a barra para negrito, títulos, listas e links. Para um link, selecione o texto e clique no ícone de link."
             required
           >
-            <Textarea id="news-content" rows={8} invalid={!!errors.content} {...register('content')} />
+            <Controller
+              control={control}
+              name="content"
+              render={({ field }) => (
+                <RichTextEditor
+                  id="news-content"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  invalid={!!errors.content}
+                  placeholder="Escreva a notícia…"
+                />
+              )}
+            />
           </FormField>
 
           <div className="grid gap-4 sm:grid-cols-2">
