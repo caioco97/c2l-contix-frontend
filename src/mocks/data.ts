@@ -8,6 +8,7 @@ import type {
   NewsDetail,
   ServiceRequestDetail,
   ServiceRequestType,
+  TaskDetail,
 } from '@/types/domain'
 import type { CurrentUser } from '@/types/auth'
 
@@ -332,3 +333,92 @@ export const mockEmployeeList: Employee[] = [
   { id: 'e-4', companyId: 'c-1', name: 'Carlos Lima', cpf: '15350946056', registration: '0004', role: 'Sócio-administrador', bond: 'Contribuinte', status: 'Ativo', admissionDate: '2021-01-04', terminationDate: null, email: null, phone: null, originRequestId: null, createdAt: '2021-01-04T12:00:00Z' },
   { id: 'e-5', companyId: 'c-1', name: 'Paulo Ramos', cpf: null, registration: null, role: 'Auxiliar', bond: 'Empregado', status: 'Desligado', admissionDate: '2023-02-01', terminationDate: '2026-06-30', email: null, phone: null, originRequestId: null, createdAt: '2023-02-01T12:00:00Z' },
 ]
+
+/** Tarefas de demonstração da primeira empresa, com prazos relativos a hoje. */
+export function mockTasks(): TaskDetail[] {
+  const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10)
+  const at = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString()
+  const base = {
+    companyId: 'c-1',
+    companyName: 'Padaria Bom Grão',
+    assigneeId: 'u-1',
+    assigneeName: 'Mariana Souza',
+    createdByName: 'Mariana Souza',
+    completedAt: null,
+    attachments: 0,
+  }
+  const created = (id: string, offset: number, message: string | null): TaskDetail['history'][number] => ({
+    id: `${id}-e1`,
+    kind: 'created',
+    message,
+    fromStatus: null,
+    toStatus: 'Pending',
+    authorName: 'Mariana Souza',
+    createdAt: at(offset),
+    attachments: [],
+  })
+  return [
+    {
+      ...base,
+      id: 't-1',
+      number: 3,
+      title: 'Apuração do ICMS 10/2026',
+      description: 'Conferir as notas de entrada e saída antes de gerar a guia.',
+      department: 'Fiscal',
+      status: 'InProgress',
+      internalDueDate: day(-1),
+      legalDueDate: day(3),
+      isOverdue: true,
+      isLegalOverdue: false,
+      comments: 1,
+      createdAt: at(-6),
+      updatedAt: at(-1),
+      allowedTransitions: ['Pending', 'Done', 'Canceled'],
+      history: [
+        created('t-1', -6, 'Conferir as notas de entrada e saída antes de gerar a guia.'),
+        { id: 't-1-e2', kind: 'status', message: null, fromStatus: 'Pending', toStatus: 'InProgress', authorName: 'Mariana Souza', createdAt: at(-2), attachments: [] },
+        { id: 't-1-e3', kind: 'comment', message: 'Faltam os XML de duas notas de entrada. Pedi ao cliente.', fromStatus: null, toStatus: null, authorName: 'Mariana Souza', createdAt: at(-1), attachments: [] },
+      ],
+    },
+    {
+      ...base,
+      id: 't-2',
+      number: 2,
+      title: 'Fechamento da folha de novembro',
+      description: null,
+      department: 'Pessoal',
+      status: 'Pending',
+      internalDueDate: day(4),
+      legalDueDate: day(7),
+      isOverdue: false,
+      isLegalOverdue: false,
+      comments: 0,
+      createdAt: at(-3),
+      updatedAt: at(-3),
+      allowedTransitions: ['InProgress', 'Done', 'Canceled'],
+      history: [created('t-2', -3, null)],
+    },
+    {
+      ...base,
+      id: 't-3',
+      number: 1,
+      title: 'Balancete do 3º trimestre',
+      description: 'Enviar ao cliente depois da revisão.',
+      department: 'Contabil',
+      status: 'Done',
+      internalDueDate: day(-10),
+      legalDueDate: null,
+      isOverdue: false,
+      isLegalOverdue: false,
+      comments: 0,
+      completedAt: at(-9),
+      createdAt: at(-15),
+      updatedAt: at(-9),
+      allowedTransitions: ['InProgress'],
+      history: [
+        created('t-3', -15, 'Enviar ao cliente depois da revisão.'),
+        { id: 't-3-e2', kind: 'status', message: 'Revisado e enviado.', fromStatus: 'Pending', toStatus: 'Done', authorName: 'Mariana Souza', createdAt: at(-9), attachments: [] },
+      ],
+    },
+  ]
+}

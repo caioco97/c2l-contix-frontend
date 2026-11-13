@@ -125,6 +125,14 @@ export const router = createBrowserRouter([
                 lazy: () => import('@/features/service-desk/ServiceDeskPage').then((m) => ({ Component: m.ServiceDeskPage })),
               },
               {
+                path: 'tarefas',
+                lazy: () => import('@/features/tasks/pages/TasksPage').then((m) => ({ Component: m.TasksPage })),
+              },
+              {
+                path: 'tarefas/:companyId/:taskId',
+                lazy: () => import('@/features/tasks/pages/TaskPage').then((m) => ({ Component: m.TaskPage })),
+              },
+              {
                 path: 'atendimento/:companyId/:requestId',
                 lazy: () =>
                   import('@/features/service-desk/ServiceDeskRequestPage').then((m) => ({ Component: m.ServiceDeskRequestPage })),

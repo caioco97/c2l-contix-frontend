@@ -2,6 +2,7 @@ import { api } from '@/lib/api'
 import { env } from '@/config/env'
 import { mockDelay, mockError } from '@/lib/mock'
 import { mockCompanies } from '@/mocks/data'
+import { mockStore } from '@/mocks/store'
 import type { PagedResult } from '@/types/api'
 import type {
   Address,
@@ -121,6 +122,8 @@ const toPanel = (d: PainelEmpresaDto): CompanyPanel => ({
   overdueRequests: d.solicitacoesAtrasadas,
   expiredCnds: d.certidoesVencidas,
   expiringCnds: d.certidoesAVencer,
+  openTasks: d.tarefasEmAberto,
+  overdueTasks: d.tarefasAtrasadas,
 })
 
 const toHistoryItem = (d: ItemHistoricoEmpresaDto): CompanyHistoryItem => ({
@@ -308,6 +311,8 @@ export const companiesApi = {
         overdueRequests: 1,
         expiredCnds: 0,
         expiringCnds: 1,
+        openTasks: mockStore.tasks(id).filter((t) => !['Done', 'Canceled'].includes(t.status)).length,
+        overdueTasks: mockStore.tasks(id).filter((t) => t.isOverdue).length,
       })
     }
     const { data } = await api.get<PainelEmpresaDto>(`/empresas/${id}/painel`)
