@@ -1,6 +1,9 @@
 import { useFieldArray, useFormContext, type FieldPath } from 'react-hook-form'
+import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button, Checkbox, FormField, Input, Select } from '@/components/ui'
+import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
+import { EmployeeSelect } from '@/features/employees/components/EmployeeSelect'
 import type { ServiceRequestTypeCode } from '@/types/domain'
 import { optionsOf } from '../meta'
 import { emptyRubrica, type RequestFormValues } from './schema'
@@ -65,6 +68,33 @@ function SelectField({
     <FormField label={label} htmlFor={name} error={error} required={required}>
       <Select id={name} options={options} placeholder="Selecione" invalid={!!error} {...register(name)} />
     </FormField>
+  )
+}
+
+/** Empregado escolhido no cadastro da empresa ativa (não é digitado). */
+function EmployeeField({ name, className, hint = true }: { name: Name; className?: string; hint?: boolean }) {
+  const { register } = useFormContext<RequestFormValues>()
+  const { company } = useActiveCompany()
+  const error = useFieldError(name)
+  return (
+    <div className={className}>
+      <FormField label="Empregado" htmlFor={name} error={error} required>
+        <EmployeeSelect id={name} companyId={company?.id ?? ''} invalid={!!error} {...register(name)} />
+      </FormField>
+      {hint && !error && (
+        <p className="mt-1.5 text-xs text-slate-500">
+          Não encontrou? Veja os{' '}
+          <Link to="/portal/empregados" className="font-medium text-brand-700 hover:underline">
+            empregados cadastrados
+          </Link>{' '}
+          ou envie uma solicitação de{' '}
+          <Link to="/portal/solicitacoes/nova/CadastroEmpregado" className="font-medium text-brand-700 hover:underline">
+            cadastro de empregado
+          </Link>
+          .
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -147,7 +177,7 @@ function FeriasFields() {
   return (
     <Section title="Férias">
       <div className={grid}>
-        <Field name="data.empregado" label="Empregado" required className="sm:col-span-2 lg:col-span-3" />
+        <EmployeeField name="data.empregadoId" className="sm:col-span-2 lg:col-span-3" />
         <Field name="data.periodoAquisitivoInicio" label="Período aquisitivo (início)" type="date" required />
         <Field name="data.periodoAquisitivoFim" label="Período aquisitivo (fim)" type="date" required />
         <Field name="data.dataInicio" label="Início das férias" type="date" required />
@@ -165,7 +195,7 @@ function RescisaoFields() {
   return (
     <Section title="Desligamento">
       <div className={grid}>
-        <Field name="data.empregado" label="Empregado" required className="sm:col-span-2 lg:col-span-3" />
+        <EmployeeField name="data.empregadoId" className="sm:col-span-2 lg:col-span-3" />
         <SelectField
           name="data.tipoDesligamento"
           label="Tipo de desligamento"
@@ -183,7 +213,7 @@ function AfastamentoFields() {
   return (
     <Section title="Afastamento">
       <div className={grid}>
-        <Field name="data.empregado" label="Empregado" required className="sm:col-span-2 lg:col-span-3" />
+        <EmployeeField name="data.empregadoId" className="sm:col-span-2 lg:col-span-3" />
         <SelectField
           name="data.motivo"
           label="Motivo"
@@ -205,6 +235,13 @@ function RubricasFields() {
   const listError = useFieldError('data.lancamentos')
   return (
     <Section title="Lançamentos da folha">
+      <p className="text-xs text-slate-500">
+        Escolha cada empregado no cadastro da empresa. Não encontrou alguém? Veja os{' '}
+        <Link to="/portal/empregados" className="font-medium text-brand-700 hover:underline">
+          empregados cadastrados
+        </Link>
+        .
+      </p>
       <div className="max-w-xs">
         <Field name="data.competencia" label="Competência" type="month" required />
       </div>
@@ -216,7 +253,7 @@ function RubricasFields() {
       <div className="space-y-3">
         {fields.map((f, i) => (
           <div key={f.id} className="grid items-start gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1.4fr_1.2fr_0.7fr_0.8fr_auto]">
-            <Field name={`data.lancamentos.${i}.empregado`} label="Empregado" required />
+            <EmployeeField name={`data.lancamentos.${i}.empregadoId`} hint={false} />
             <Field name={`data.lancamentos.${i}.rubrica`} label="Rubrica" required list="rubricas-sugeridas" />
             <Field name={`data.lancamentos.${i}.quantidade`} label="Qtd./horas" type="number" step="0.01" min="0" inputMode="decimal" />
             <Field name={`data.lancamentos.${i}.valor`} label="Valor (R$)" type="number" step="0.01" min="0" inputMode="decimal" />

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, ClipboardList, Inbox, ReceiptText } from 'lucide-react'
+import { BarChart3, ClipboardList, Inbox, ReceiptText, Users } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import { useModuleAccess } from '@/features/companies/useModuleAccess'
 import type { PortalModule } from '@/types/domain'
@@ -7,6 +7,7 @@ import type { PortalModule } from '@/types/domain'
 const LINKS: { to: string; label: string; icon: typeof Inbox; end?: boolean; module: PortalModule }[] = [
   { to: '/portal', label: 'Solicitação de Serviço', icon: ClipboardList, end: true, module: 'Solicitacoes' },
   { to: '/portal/solicitacoes', label: 'Minhas solicitações', icon: Inbox, module: 'Solicitacoes' },
+  { to: '/portal/empregados', label: 'Empregados', icon: Users, module: 'Solicitacoes' },
   { to: '/portal/nfe', label: 'Manifestação de NF-e', icon: ReceiptText, module: 'NFe' },
   { to: '/portal/relatorios', label: 'Relatórios', icon: BarChart3, module: 'Solicitacoes' },
 ]

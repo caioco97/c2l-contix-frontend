@@ -3,6 +3,7 @@ import { env } from '@/config/env'
 import { mockDelay, mockError } from '@/lib/mock'
 import { mockRequestTypes, mockUser } from '@/mocks/data'
 import { mockStore } from '@/mocks/store'
+import { mockEmployees } from '@/features/employees/api'
 import type { PagedResult } from '@/types/api'
 import type {
   Department,
@@ -69,6 +70,8 @@ function toRequest(dto: SolicitacaoResumoDto): ServiceRequest {
     isOverdue: dto.atrasada,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt ?? dto.createdAt,
+    employeeId: dto.empregadoId ?? null,
+    employeeName: dto.empregadoNome ?? null,
   }
 }
 
@@ -115,6 +118,8 @@ export interface RequestFilters {
   unassigned?: boolean
   overdue?: boolean
   companyId?: string
+  /** Solicitações do empregado (inclui lançamentos de rubricas em que ele aparece). */
+  employeeId?: string
   search?: string
   sortBy?: 'createdAt' | 'numero' | 'prazo' | 'status' | 'atualizado'
   sortDesc?: boolean
@@ -132,6 +137,7 @@ function toParams(f: RequestFilters) {
     semResponsavel: f.unassigned || undefined,
     atrasadas: f.overdue || undefined,
     empresaId: f.companyId,
+    empregadoId: f.employeeId,
     busca: f.search?.trim() || undefined,
     orderBy: f.sortBy,
     desc: f.sortDesc,
@@ -267,6 +273,11 @@ const mockRequests = {
   everything: () => mockStore.allRequests(),
   find: (companyId: string, id: string) => mockStore.requests(companyId).find((r) => r.id === id),
 
+  mentions(r: ServiceRequestDetail, employeeId: string) {
+    const lancamentos = (r.data?.lancamentos ?? []) as { empregadoId?: string }[]
+    return r.employeeId === employeeId || lancamentos.some((l) => l.empregadoId === employeeId)
+  },
+
   page(list: ServiceRequestDetail[], f: RequestFilters): PagedResult<ServiceRequest> {
     const term = f.search?.trim().replace(/^#/, '').toLowerCase()
     const items = list
@@ -277,6 +288,7 @@ const mockRequests = {
       .filter((r) => !f.assigneeId || r.assigneeId === f.assigneeId)
       .filter((r) => !f.unassigned || !r.assigneeId)
       .filter((r) => !f.overdue || r.isOverdue)
+      .filter((r) => !f.employeeId || mockRequests.mentions(r, f.employeeId))
       .filter((r) => !term || String(r.number) === term || r.subject.toLowerCase().includes(term))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     const start = (f.page - 1) * f.pageSize
@@ -303,6 +315,8 @@ const mockRequests = {
 
   create(companyId: string, input: CreateRequestInput): ServiceRequestDetail {
     const type = mockRequestTypes.find((t) => t.code === input.typeCode)!
+    const employeeId = typeof input.data?.empregadoId === 'string' ? input.data.empregadoId : undefined
+    const employee = employeeId ? mockEmployees.find(companyId, employeeId) : undefined
     const all = mockStore.allRequests()
     const now = mockStore.now()
     const created: ServiceRequestDetail = {
@@ -312,7 +326,7 @@ const mockRequests = {
       companyName: 'Empresa',
       typeCode: input.typeCode,
       typeName: type.name,
-      subject: input.subject || `${type.name}${input.data?.empregado ? ` - ${input.data.empregado}` : ''}`,
+      subject: input.subject || `${type.name}${employee ? ` - ${employee.name}` : ''}`,
       department: input.department ?? type.department,
       status: 'Open',
       requesterName: mockUser.name,
@@ -322,8 +336,10 @@ const mockRequests = {
       isOverdue: false,
       createdAt: now,
       updatedAt: now,
+      employeeId: employee?.id ?? null,
+      employeeName: employee?.name ?? null,
       description: input.description || null,
-      data: input.data ?? null,
+      data: mockEmployees.withNames(companyId, input.data),
       closedAt: null,
       allowedTransitions: ['Canceled'],
       history: [],

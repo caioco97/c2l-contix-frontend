@@ -3,7 +3,8 @@ import type { Department, ServiceRequestType, ServiceRequestTypeCode } from '@/t
 
 /** Valores do formulário de nova solicitação. Os campos de `data` usam os nomes da API. */
 export interface RubricaRow {
-  empregado: string
+  /** Id do empregado no cadastro da empresa. */
+  empregadoId: string
   rubrica: string
   quantidade: string
   valor: string
@@ -26,8 +27,8 @@ export interface RequestData {
   instituicaoEnsino: string
   curso: string
   dataTerminoEstagio: string
-  // Férias / rescisão / afastamento
-  empregado: string
+  // Férias / rescisão / afastamento: id do empregado no cadastro da empresa
+  empregadoId: string
   periodoAquisitivoInicio: string
   periodoAquisitivoFim: string
   dataInicio: string
@@ -53,7 +54,7 @@ export interface RequestFormValues {
   data: RequestData
 }
 
-export const emptyRubrica = (): RubricaRow => ({ empregado: '', rubrica: '', quantidade: '', valor: '' })
+export const emptyRubrica = (): RubricaRow => ({ empregadoId: '', rubrica: '', quantidade: '', valor: '' })
 
 export function defaultValues(type: ServiceRequestType | undefined): RequestFormValues {
   return {
@@ -65,7 +66,7 @@ export function defaultValues(type: ServiceRequestType | undefined): RequestForm
       nome: '', cpf: '', rg: '', pis: '', dataNascimento: '', email: '', telefone: '',
       endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '' },
       cargo: '', salario: '', jornada: '', dataAdmissao: '', instituicaoEnsino: '', curso: '', dataTerminoEstagio: '',
-      empregado: '', periodoAquisitivoInicio: '', periodoAquisitivoFim: '', dataInicio: '', dias: '30',
+      empregadoId: '', periodoAquisitivoInicio: '', periodoAquisitivoFim: '', dataInicio: '', dias: '30',
       abonoPecuniario: false, adiantamento13: false, tipoDesligamento: '', dataDesligamento: '', avisoPrevio: '',
       motivo: '', previsaoRetorno: '', observacoes: '', competencia: '', lancamentos: [emptyRubrica()],
     },
@@ -115,7 +116,7 @@ function pessoa(code: ServiceRequestTypeCode) {
 
 const ferias = z
   .object({
-    empregado: req('Informe o empregado.'),
+    empregadoId: req('Selecione o empregado.'),
     periodoAquisitivoInicio: req('Informe o início.'),
     periodoAquisitivoFim: req('Informe o fim.'),
     dataInicio: req('Informe o início das férias.'),
@@ -133,14 +134,14 @@ const ferias = z
   })
 
 const rescisao = z.object({
-  empregado: req('Informe o empregado.'),
+  empregadoId: req('Selecione o empregado.'),
   tipoDesligamento: req('Selecione o tipo.'),
   dataDesligamento: req('Informe a data.'),
   avisoPrevio: req('Selecione o aviso prévio.'),
 })
 
 const afastamento = z
-  .object({ empregado: req('Informe o empregado.'), motivo: req('Selecione o motivo.'), dataInicio: req('Informe o início.'), previsaoRetorno: opt })
+  .object({ empregadoId: req('Selecione o empregado.'), motivo: req('Selecione o motivo.'), dataInicio: req('Informe o início.'), previsaoRetorno: opt })
   .refine((d) => !d.previsaoRetorno || d.previsaoRetorno >= d.dataInicio, {
     path: ['previsaoRetorno'],
     message: 'Deve ser igual ou posterior ao início.',
@@ -151,7 +152,7 @@ const rubricas = z.object({
   lancamentos: z
     .array(
       z
-        .object({ empregado: req('Informe o empregado.'), rubrica: req('Informe a rubrica.'), quantidade: opt, valor: opt })
+        .object({ empregadoId: req('Selecione o empregado.'), rubrica: req('Informe a rubrica.'), quantidade: opt, valor: opt })
         .refine((l) => Number(l.quantidade.replace(',', '.')) > 0 || Number(l.valor.replace(',', '.')) > 0, {
           path: ['valor'],
           message: 'Informe a quantidade ou o valor.',
@@ -220,26 +221,26 @@ export function toApiData(code: ServiceRequestTypeCode, d: RequestData): Record<
     case 'AvisoFerias':
     case 'CalculoFerias':
       return {
-        empregado: d.empregado.trim(), periodoAquisitivoInicio: d.periodoAquisitivoInicio,
+        empregadoId: d.empregadoId, periodoAquisitivoInicio: d.periodoAquisitivoInicio,
         periodoAquisitivoFim: d.periodoAquisitivoFim, dataInicio: d.dataInicio, dias: Number(d.dias),
         abonoPecuniario: d.abonoPecuniario, adiantamento13: d.adiantamento13,
       }
     case 'AvisoRescisao':
     case 'CalculoRescisao':
       return {
-        empregado: d.empregado.trim(), tipoDesligamento: d.tipoDesligamento, dataDesligamento: d.dataDesligamento,
+        empregadoId: d.empregadoId, tipoDesligamento: d.tipoDesligamento, dataDesligamento: d.dataDesligamento,
         avisoPrevio: d.avisoPrevio, observacoes: txt(d.observacoes),
       }
     case 'Afastamento':
       return {
-        empregado: d.empregado.trim(), motivo: d.motivo, dataInicio: d.dataInicio,
+        empregadoId: d.empregadoId, motivo: d.motivo, dataInicio: d.dataInicio,
         previsaoRetorno: txt(d.previsaoRetorno), observacoes: txt(d.observacoes),
       }
     case 'LancamentoRubricas':
       return {
         competencia: `${d.competencia}-01`,
         lancamentos: d.lancamentos.map((l) => ({
-          empregado: l.empregado.trim(), rubrica: l.rubrica.trim(), quantidade: num(l.quantidade), valor: num(l.valor),
+          empregadoId: l.empregadoId, rubrica: l.rubrica.trim(), quantidade: num(l.quantidade), valor: num(l.valor),
         })),
       }
     default:

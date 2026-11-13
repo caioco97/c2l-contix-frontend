@@ -351,6 +351,9 @@ export interface ServiceRequest {
   isOverdue: boolean
   createdAt: string
   updatedAt: string
+  /** Empregado do cadastro da empresa a que a solicitação se refere (ou que ela gerou). */
+  employeeId: string | null
+  employeeName: string | null
 }
 
 export interface RequestAttachment {
@@ -410,4 +413,41 @@ export interface NotificationPreference {
   type: NotificationType
   label: string
   email: boolean
+}
+
+/* ---------- Empregados ---------- */
+
+export type EmployeeBond = 'Empregado' | 'Contribuinte' | 'Estagiario'
+export type EmployeeStatus = 'Ativo' | 'Afastado' | 'Desligado'
+
+export interface Employee {
+  id: string
+  companyId: string
+  name: string
+  /** Somente dígitos. */
+  cpf: string | null
+  registration: string | null
+  role: string | null
+  bond: EmployeeBond
+  status: EmployeeStatus
+  admissionDate: string | null
+  terminationDate: string | null
+  email: string | null
+  phone: string | null
+  /** Solicitação de cadastro que originou o registro. */
+  originRequestId: string | null
+  createdAt: string
+}
+
+export interface EmployeeInput {
+  name: string
+  cpf: string
+  registration: string
+  role: string
+  bond: EmployeeBond
+  status: EmployeeStatus
+  admissionDate: string
+  terminationDate: string
+  email: string
+  phone: string
 }

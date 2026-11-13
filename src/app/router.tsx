@@ -71,6 +71,11 @@ export const router = createBrowserRouter([
                 lazy: () => import('@/features/requests/pages/PortalRequestPage').then((m) => ({ Component: m.PortalRequestPage })),
               },
               {
+                path: 'empregados',
+                lazy: () =>
+                  import('@/features/employees/pages/PortalEmployeesPage').then((m) => ({ Component: m.PortalEmployeesPage })),
+              },
+              {
                 path: 'solicitacoes/nova/:typeCode',
                 lazy: () => import('@/features/requests/pages/NewRequestPage').then((m) => ({ Component: m.NewRequestPage })),
               },

@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { getErrorMessage } from '@/lib/api'
 import { formatCnpj, formatDate } from '@/lib/format'
 import type { CompanyDetail, CompanyInput, CompanyPanel } from '@/types/domain'
+import { EmployeesPanel } from '@/features/employees/components/EmployeesPanel'
 import { useActiveCompany } from '../ActiveCompanyContext'
 import { companiesApi, companyKeys } from '../api'
 import { CompanyFormModal } from '../components/CompanyFormModal'
@@ -15,7 +16,7 @@ import { DeleteCompanyModal } from '../components/DeleteCompanyModal'
 import { CndTab, DocumentsTab, HistoryTab, RequestsTab } from '../components/CompanyActivityTabs'
 import { regimeLabel, statusOf } from '../meta'
 
-const TABS = ['dados', 'usuarios', 'documentos', 'solicitacoes', 'cnd', 'historico'] as const
+const TABS = ['dados', 'usuarios', 'empregados', 'documentos', 'solicitacoes', 'cnd', 'historico'] as const
 type Tab = (typeof TABS)[number]
 
 /** Página da empresa para o escritório: cadastro, usuários do portal e tudo o que aconteceu com ela. */
@@ -135,6 +136,7 @@ export function CompanyDetailPage() {
         items={[
           { value: 'dados', label: 'Visão geral' },
           { value: 'usuarios', label: 'Usuários', count: p?.pendingInvites },
+          { value: 'empregados', label: 'Empregados' },
           { value: 'documentos', label: 'Documentos', count: p?.receivedUnread },
           { value: 'solicitacoes', label: 'Solicitações', count: p?.openRequests },
           { value: 'cnd', label: 'Certidões', count: p ? p.expiredCnds + p.expiringCnds : undefined },
@@ -145,6 +147,9 @@ export function CompanyDetailPage() {
       {tab === 'dados' && <Overview company={c} panel={p} loading={panel.isLoading} onEdit={() => setEditing(true)} onTab={setTab} />}
       {tab === 'usuarios' && (
         <CompanyUsersTab companyId={companyId} companyName={c.legalName} inviting={inviting} onInvitingChange={setInviting} />
+      )}
+      {tab === 'empregados' && (
+        <EmployeesPanel companyId={companyId} editable requestHref={(id) => `/atendimento/${companyId}/${id}`} />
       )}
       {tab === 'documentos' && <DocumentsTab companyId={companyId} onOpen={() => openAs('/documentos')} />}
       {tab === 'solicitacoes' && <RequestsTab companyId={companyId} />}
