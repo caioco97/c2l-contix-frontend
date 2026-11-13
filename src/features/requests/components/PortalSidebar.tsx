@@ -8,7 +8,7 @@ const LINKS: { to: string; label: string; icon: typeof Inbox; end?: boolean; mod
   { to: '/portal', label: 'Solicitação de Serviço', icon: ClipboardList, end: true, module: 'Solicitacoes' },
   { to: '/portal/solicitacoes', label: 'Minhas solicitações', icon: Inbox, module: 'Solicitacoes' },
   { to: '/portal/empregados', label: 'Empregados', icon: Users, module: 'Solicitacoes' },
-  { to: '/portal/nfe', label: 'Manifestação de NF-e', icon: ReceiptText, module: 'NFe' },
+  { to: '/nfe', label: 'Manifestação de NF-e', icon: ReceiptText, module: 'NFe' },
   { to: '/portal/relatorios', label: 'Relatórios', icon: BarChart3, module: 'Solicitacoes' },
 ]
 

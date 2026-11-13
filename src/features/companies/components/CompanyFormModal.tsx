@@ -1,9 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button, FormField, Input, MaskedInput, Modal, Select, UfSelect, type MaskKind } from '@/components/ui'
-import { digits, formatCep, formatCpfCnpj, formatIe, formatIm, formatPhone, phoneDigits } from '@/lib/br'
+import { Search } from 'lucide-react'
+import { digits, formatCep, formatCpfCnpj, formatIe, formatIm, formatPhone, isValidCnpj, phoneDigits } from '@/lib/br'
+import { getErrorMessage } from '@/lib/api'
+import { nfeApi } from '@/features/nfe/api'
+import type { CnpjData } from '@/features/nfe/types'
 import { useCepLookup } from '@/lib/cep'
 import { br } from '@/lib/zodBr'
 import type { CompanyDetail, CompanyInput } from '@/types/domain'
@@ -70,12 +74,66 @@ export function CompanyFormModal({ open, company, onClose, onSubmit }: Props) {
     reset,
     setValue,
     setFocus,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults(company) })
+
+  // Preenchimento pelo CNPJ (dados públicos da Receita Federal).
+  const [cnpjHint, setCnpjHint] = useState<string>()
+  const [lookingUp, setLookingUp] = useState(false)
+  const [lastLookup, setLastLookup] = useState('')
 
   useEffect(() => {
     if (open) reset(defaults(company))
   }, [open, company, reset])
+  const fillFromCnpj = (d: CnpjData) => {
+    const opts = { shouldDirty: true, shouldValidate: true }
+    setValue('legalName', d.legalName, opts)
+    if (d.tradeName) setValue('tradeName', d.tradeName, opts)
+    if (d.email) setValue('email', d.email, opts)
+    if (d.phone) setValue('phone', formatPhone(d.phone), opts)
+    if (d.suggestedRegime) setValue('taxRegime', d.suggestedRegime, opts)
+    if (d.address) {
+      setValue('zip', formatCep(d.address.zip), opts)
+      setValue('street', d.address.street, opts)
+      setValue('number', d.address.number, opts)
+      setValue('complement', d.address.complement, opts)
+      setValue('district', d.address.district, opts)
+      setValue('city', d.address.city, opts)
+      setValue('state', d.address.state.toUpperCase(), opts)
+    }
+  }
+  const onDocumentChange = (value: string) => {
+    // Outro documento: o aviso e a consulta em andamento eram do anterior.
+    if (digits(value) !== lastLookup) {
+      setLookingUp(false)
+      setCnpjHint(undefined)
+    }
+    if (!company) lookupCnpj(value)
+  }
+  const lookupCnpj = async (value: string, force = false) => {
+    const cnpj = digits(value)
+    if (cnpj.length !== 14 || !isValidCnpj(cnpj) || (!force && cnpj === lastLookup)) return
+    setLastLookup(cnpj)
+    // Se o CNPJ do formulário mudou enquanto a consulta corria, a resposta é de outra empresa e é descartada.
+    const stale = () => digits(getValues('document')) !== cnpj
+    setLookingUp(true)
+    setCnpjHint('Consultando o CNPJ na Receita Federal…')
+    try {
+      const d = await nfeApi.lookupCnpj(cnpj)
+      if (stale()) return
+      fillFromCnpj(d)
+      setCnpjHint(
+        d.active
+          ? `Dados preenchidos pela Receita Federal (${d.source}). Confira antes de salvar.`
+          : `Atenção: situação cadastral ${d.registrationStatus ?? 'não ativa'} na Receita Federal.`,
+      )
+    } catch (e) {
+      if (!stale()) setCnpjHint(getErrorMessage(e, 'Não foi possível consultar o CNPJ. Preencha os dados manualmente.'))
+    } finally {
+      if (!stale()) setLookingUp(false)
+    }
+  }
 
   const submit = handleSubmit(async (v) => {
     await onSubmit({
@@ -126,7 +184,11 @@ export function CompanyFormModal({ open, company, onClose, onSubmit }: Props) {
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={() => {
+        setCnpjHint(undefined)
+        setLastLookup('')
+        onClose()
+      }}
       title={company ? 'Editar empresa' : 'Nova empresa'}
       description={company ? company.legalName : 'As pastas padrão de documentos são criadas automaticamente.'}
       size="lg"
@@ -145,7 +207,31 @@ export function CompanyFormModal({ open, company, onClose, onSubmit }: Props) {
         {field('legalName', 'Razão social', { required: true, className: 'sm:col-span-6' })}
         {field('tradeName', 'Nome fantasia', { className: 'sm:col-span-4' })}
         {field('nickname', 'Apelido', { className: 'sm:col-span-2', placeholder: 'Ex.: BOMGRAO' })}
-        {field('document', 'CNPJ ou CPF', { required: true, className: 'sm:col-span-2', mask: 'cpfCnpj' })}
+        <div className="sm:col-span-2">
+          <FormField label="CNPJ ou CPF" htmlFor="company-document" error={errors.document?.message} required hint={cnpjHint}>
+            <div className="flex gap-1">
+              <div className="min-w-0 flex-1">
+                <MaskedInput
+                  mask="cpfCnpj"
+                  id="company-document"
+                  invalid={!!errors.document}
+                  {...register('document', { onChange: (e) => onDocumentChange(e.target.value) })}
+                />
+              </div>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="h-10 w-10 shrink-0"
+                title="Preencher com os dados do CNPJ"
+                aria-label="Preencher com os dados do CNPJ"
+                loading={lookingUp}
+                onClick={() => lookupCnpj(getValues('document'), true)}
+              >
+                {!lookingUp && <Search className="h-4 w-4" />}
+              </Button>
+            </div>
+          </FormField>
+        </div>
         {field('stateRegistration', 'Inscrição estadual', { className: 'sm:col-span-2', mask: 'ie' })}
         {field('cityRegistration', 'Inscrição municipal', { className: 'sm:col-span-2', mask: 'im' })}
         <div className="sm:col-span-3">
