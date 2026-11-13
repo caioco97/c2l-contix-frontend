@@ -1,6 +1,6 @@
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CalendarClock, FileText, MessageSquare, Inbox, Megaphone, ShieldAlert } from 'lucide-react'
+import { CalendarClock, ClipboardCheck, FileText, MessageSquare, Inbox, Megaphone, ShieldAlert } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { AppNotification, NotificationType } from '@/types/domain'
 
@@ -11,6 +11,7 @@ const ICONS: Record<NotificationType, typeof FileText> = {
   RequestUpdated: MessageSquare,
   NewNews: Megaphone,
   CndExpiring: ShieldAlert,
+  TaskAssigned: ClipboardCheck,
 }
 
 const TONES: Record<NotificationType, string> = {
@@ -20,6 +21,7 @@ const TONES: Record<NotificationType, string> = {
   RequestUpdated: 'bg-violet-50 text-violet-600',
   NewNews: 'bg-sky-50 text-sky-600',
   CndExpiring: 'bg-red-50 text-red-600',
+  TaskAssigned: 'bg-orange-50 text-orange-600',
 }
 
 function timeAgo(iso: string) {

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BellRing, Building2, ChevronDown, CircleHelp, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
+import { BellRing, Building2, ChevronDown, CircleHelp, ClipboardCheck, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ShieldCheck, UserRound, X } from 'lucide-react'
 import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
@@ -30,6 +30,7 @@ const NAV: NavItem[] = [
   { to: '/empresas', label: 'Empresas', icon: Building2, audience: 'office' },
   { to: '/documentos', label: 'Documentos', icon: FolderOpen, modules: ['Documentos'] },
   { to: '/atendimento', label: 'Atendimento', icon: Headset, audience: 'office' },
+  { to: '/tarefas', label: 'Tarefas', icon: ClipboardCheck, audience: 'office' },
   { to: '/certidoes', label: 'CND', icon: ShieldCheck },
   { to: '/portal', label: 'Portal do Cliente', icon: LayoutGrid, audience: 'client', modules: ['Solicitacoes', 'NFe'] },
   { to: '/noticias', label: 'Notícias', icon: Megaphone, audience: 'office' },
