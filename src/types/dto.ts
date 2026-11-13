@@ -285,6 +285,7 @@ export type TipoNotificacaoDto =
   | 'NovaNoticia'
   | 'CertidaoVencimento'
   | 'TarefaAtribuida'
+  | 'EmissaoCertidaoFalha'
 
 export interface NotificacaoDto {
   id: string
@@ -403,8 +404,40 @@ export interface CertidaoDto {
   nomeArquivo: string | null
   tamanhoBytes: number | null
   cadastradoPorNome: string
+  emitidaAutomaticamente: boolean
   createdAt: string
   updatedAt: string | null
+}
+
+export type StatusEmissaoCertidaoDto = 'Pendente' | 'Emitida' | 'Falha'
+export type OrigemEmissaoCertidaoDto = 'Agendada' | 'Manual'
+
+export interface ConfiguracaoEmissaoDto {
+  integracaoHabilitada: boolean
+  provedor: string | null
+  tiposSuportados: TipoCertidaoDto[]
+  ativa: boolean
+  tipos: TipoCertidaoDto[]
+  diasAntecedencia: number
+  responsavelId: string | null
+  responsavelNome: string | null
+}
+
+export interface EmissaoCertidaoDto {
+  id: string
+  empresaId: string
+  tipo: TipoCertidaoDto
+  tipoNome: string
+  origem: OrigemEmissaoCertidaoDto
+  status: StatusEmissaoCertidaoDto
+  tentativas: number
+  proximaTentativaEm: string | null
+  createdAt: string
+  concluidaEm: string | null
+  provedor: string | null
+  mensagem: string | null
+  certidaoId: string | null
+  solicitadoPorNome: string | null
 }
 
 export interface PainelCertidoesDto {

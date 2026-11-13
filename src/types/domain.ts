@@ -287,6 +287,40 @@ export interface Cnd {
   hasFile: boolean
   fileName: string | null
   sizeBytes: number | null
+  /** Emitida pela integração (emissão automática). */
+  autoIssued: boolean
+}
+
+/** Emissão automática de certidões de uma empresa. */
+export interface CndAutoConfig {
+  /** false: o ambiente não tem integrador configurado. */
+  integrationEnabled: boolean
+  provider: string | null
+  supportedTypes: CndType[]
+  active: boolean
+  types: CndType[]
+  daysBefore: number
+  assigneeId: string | null
+  assigneeName: string | null
+}
+
+export type CndAutoConfigInput = Pick<CndAutoConfig, 'active' | 'types' | 'daysBefore' | 'assigneeId'>
+
+export type CndIssueStatus = 'Pendente' | 'Emitida' | 'Falha'
+
+export interface CndIssue {
+  id: string
+  type: CndType
+  typeName: string
+  origin: 'Agendada' | 'Manual'
+  status: CndIssueStatus
+  attempts: number
+  nextAttemptAt: string | null
+  createdAt: string
+  finishedAt: string | null
+  provider: string | null
+  message: string | null
+  requestedBy: string | null
 }
 
 export interface CndDashboard {
@@ -404,6 +438,7 @@ export type NotificationType =
   | 'NewNews'
   | 'CndExpiring'
   | 'TaskAssigned'
+  | 'CndIssueFailed'
 
 export interface AppNotification {
   id: string

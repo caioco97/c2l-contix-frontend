@@ -3,8 +3,8 @@ import { env } from '@/config/env'
 import { fetchFile } from '@/lib/download'
 import { mockDelay } from '@/lib/mock'
 import { mockStore } from '@/mocks/store'
-import type { Cnd, CndDashboard, CndInput, CndStatus, CndType } from '@/types/domain'
-import type { CertidaoDto, PainelCertidoesDto } from '@/types/dto'
+import type { Cnd, CndAutoConfig, CndAutoConfigInput, CndDashboard, CndInput, CndIssue, CndStatus, CndType } from '@/types/domain'
+import type { CertidaoDto, ConfiguracaoEmissaoDto, EmissaoCertidaoDto, PainelCertidoesDto } from '@/types/dto'
 
 export const CND_TYPES: { value: CndType; label: string }[] = [
   { value: 'FederalPgfn', label: 'Federal (RFB/PGFN)' },
@@ -24,6 +24,43 @@ export const cndKeys = {
   all: ['cnd'] as const,
   list: (companyId: string, history = false) => ['cnd', companyId, history] as const,
   dashboard: (days: number) => ['cnd', 'dashboard', days] as const,
+  autoConfig: (companyId: string) => ['cnd', companyId, 'auto-config'] as const,
+  issues: (companyId: string) => ['cnd', companyId, 'issues'] as const,
+}
+
+/** Tipos que a emissão automática cobre hoje (os demais variam por UF/município). */
+export const AUTO_CND_TYPES: CndType[] = ['FederalPgfn', 'Fgts', 'Trabalhista']
+
+const typeLabel = (type: CndType) => CND_TYPES.find((t) => t.value === type)!.label
+
+function toAutoConfig(dto: ConfiguracaoEmissaoDto): CndAutoConfig {
+  return {
+    integrationEnabled: dto.integracaoHabilitada,
+    provider: dto.provedor,
+    supportedTypes: dto.tiposSuportados,
+    active: dto.ativa,
+    types: dto.tipos,
+    daysBefore: dto.diasAntecedencia,
+    assigneeId: dto.responsavelId,
+    assigneeName: dto.responsavelNome,
+  }
+}
+
+function toIssue(dto: EmissaoCertidaoDto): CndIssue {
+  return {
+    id: dto.id,
+    type: dto.tipo,
+    typeName: dto.tipoNome,
+    origin: dto.origem,
+    status: dto.status,
+    attempts: dto.tentativas,
+    nextAttemptAt: dto.proximaTentativaEm,
+    createdAt: dto.createdAt,
+    finishedAt: dto.concluidaEm,
+    provider: dto.provedor,
+    message: dto.mensagem,
+    requestedBy: dto.solicitadoPorNome,
+  }
 }
 
 function statusOf(dto: CertidaoDto): CndStatus {
@@ -51,6 +88,7 @@ function toCnd(dto: CertidaoDto): Cnd {
     hasFile: dto.possuiArquivo,
     fileName: dto.nomeArquivo,
     sizeBytes: dto.tamanhoBytes,
+    autoIssued: dto.emitidaAutomaticamente,
   }
 }
 
@@ -88,6 +126,7 @@ function mockFromInput(companyId: string, input: CndInput, base?: Cnd): Cnd {
     hasFile: input.removeFile ? !!input.file : !!input.file || !!base?.hasFile,
     fileName: input.file?.name ?? (input.removeFile ? null : (base?.fileName ?? null)),
     sizeBytes: input.file?.size ?? base?.sizeBytes ?? null,
+    autoIssued: false,
   }
 }
 
@@ -134,6 +173,58 @@ export const cndApi = {
     const fallback = cnd.fileName ?? `${cnd.typeName}.pdf`
     if (env.useMocks) return mockDelay({ blob: new Blob([`Certidão de demonstração: ${cnd.typeName}`]), fileName: fallback }, 300)
     return fetchFile(`/empresas/${companyId}/certidoes/${cnd.id}/download`, fallback)
+  },
+
+  /** Configuração da emissão automática da empresa. */
+  async autoConfig(companyId: string): Promise<CndAutoConfig> {
+    if (env.useMocks) {
+      const c = mockStore.cndAuto(companyId)
+      return mockDelay({ ...c, integrationEnabled: true, provider: 'Simulado', supportedTypes: AUTO_CND_TYPES, assigneeName: null }, 250)
+    }
+    const { data } = await api.get<ConfiguracaoEmissaoDto>(`/empresas/${companyId}/certidoes/emissao-automatica`)
+    return toAutoConfig(data)
+  },
+
+  async saveAutoConfig(companyId: string, input: CndAutoConfigInput): Promise<CndAutoConfig> {
+    if (env.useMocks) {
+      mockStore.setCndAuto(companyId, input)
+      return cndApi.autoConfig(companyId)
+    }
+    const { data } = await api.put<ConfiguracaoEmissaoDto>(`/empresas/${companyId}/certidoes/emissao-automatica`, {
+      ativa: input.active,
+      tipos: input.types,
+      diasAntecedencia: input.daysBefore,
+      responsavelId: input.assigneeId || null,
+    })
+    return toAutoConfig(data)
+  },
+
+  /** Histórico das emissões automáticas (mais recentes primeiro). */
+  async issues(companyId: string): Promise<CndIssue[]> {
+    if (env.useMocks) return mockDelay([...mockStore.cndIssues(companyId)], 200)
+    const { data } = await api.get<EmissaoCertidaoDto[]>(`/empresas/${companyId}/certidoes/emissoes`, { params: { limite: 30 } })
+    return data.map(toIssue)
+  },
+
+  /** "Emitir agora": coloca na fila (vazio = os tipos configurados). */
+  async issueNow(companyId: string, types?: CndType[]): Promise<void> {
+    if (env.useMocks) {
+      const list = mockStore.cndIssues(companyId)
+      const now = new Date().toISOString()
+      for (const type of types?.length ? types : mockStore.cndAuto(companyId).types) {
+        const valid = new Date(Date.now() + 180 * 86_400_000).toISOString().slice(0, 10)
+        const cnds = mockStore.cnds(companyId)
+        cnds.forEach((c) => c.type === type && (c.isCurrent = false))
+        const cnd = mockFromInput(companyId, { type, situation: 'Negativa', number: '', issuedAt: now.slice(0, 10), validUntil: valid, notes: '' })
+        cnds.unshift({ ...cnd, hasFile: true, fileName: `${typeLabel(type)}.pdf`, sizeBytes: 40_000, autoIssued: true })
+        list.unshift({
+          id: crypto.randomUUID(), type, typeName: typeLabel(type), origin: 'Manual', status: 'Emitida', attempts: 1,
+          nextAttemptAt: null, createdAt: now, finishedAt: now, provider: 'Simulado', message: null, requestedBy: 'Você',
+        })
+      }
+      return mockDelay(undefined, 600)
+    }
+    await api.post(`/empresas/${companyId}/certidoes/emissoes`, { tipos: types ?? [] })
   },
 
   /** Painel do escritório (todas as empresas). */

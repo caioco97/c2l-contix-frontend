@@ -259,6 +259,7 @@ const cnd = (
   hasFile: true,
   fileName: `${typeName}.pdf`,
   sizeBytes: 95_000,
+  autoIssued: false,
 })
 
 export const mockCnds: Cnd[] = [

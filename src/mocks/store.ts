@@ -1,5 +1,5 @@
 import { formatISO } from 'date-fns'
-import type { Cnd, DocumentItem, NewsDetail, OfficeNewsDetail, ServiceRequestDetail, TaskDetail } from '@/types/domain'
+import type { Cnd, CndAutoConfigInput, CndIssue, DocumentItem, NewsDetail, OfficeNewsDetail, ServiceRequestDetail, TaskDetail } from '@/types/domain'
 import { mockCnds, mockDocuments, mockNews, mockRequests, mockTasks } from './data'
 
 /**
@@ -16,6 +16,8 @@ const news = new Map<string, NewsDetail[]>([
   ['c-2', structuredClone(mockNews).map((n) => ({ ...n, isRead: true }))],
 ])
 const cnds = new Map<string, Cnd[]>([['c-1', structuredClone(mockCnds)]])
+const cndAuto = new Map<string, CndAutoConfigInput>()
+const cndIssues = new Map<string, CndIssue[]>()
 const officeNews: OfficeNewsDetail[] = mockNews.map((n) => ({
   id: n.id,
   title: n.title,
@@ -49,6 +51,16 @@ export const mockStore = {
   cnds: (companyId: string) => {
     if (!cnds.has(companyId)) cnds.set(companyId, [])
     return cnds.get(companyId)!
+  },
+  cndAuto: (companyId: string) => {
+    if (!cndAuto.has(companyId))
+      cndAuto.set(companyId, { active: false, types: ['FederalPgfn', 'Fgts', 'Trabalhista'], daysBefore: 10, assigneeId: null })
+    return cndAuto.get(companyId)!
+  },
+  setCndAuto: (companyId: string, input: CndAutoConfigInput) => void cndAuto.set(companyId, input),
+  cndIssues: (companyId: string) => {
+    if (!cndIssues.has(companyId)) cndIssues.set(companyId, [])
+    return cndIssues.get(companyId)!
   },
   officeNews: () => officeNews,
   requests: (companyId: string) => {

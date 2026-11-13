@@ -16,6 +16,7 @@ import {
   THead,
   Tr,
 } from '@/components/ui'
+import { CndAutoIssueCard } from '@/features/cnd/components/CndAutoIssueCard'
 import { CndStatusBadge } from '@/features/cnd/components/CndStatusBadge'
 import { cndApi, cndKeys } from '@/features/cnd/api'
 import { useDownloadCnd } from '@/features/cnd/hooks'
@@ -151,71 +152,77 @@ export function CndTab({ companyId, onManage }: { companyId: string; onManage: (
   const download = useDownloadCnd()
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader
-        className="pb-4"
-        title="Certidões"
-        action={
-          <Button variant="secondary" size="sm" onClick={onManage}>
-            Gerenciar certidões
-          </Button>
-        }
-      />
-      {isLoading ? (
-        <Loading />
-      ) : data.length === 0 ? (
-        <div className="p-6">
-          <EmptyState icon={<ShieldCheck className="h-8 w-8" />} title="Nenhuma certidão cadastrada." />
-        </div>
-      ) : (
-        <Table>
-          <THead>
-            <tr>
-              <Th>Certidão</Th>
-              <Th>Situação</Th>
-              <Th>Emissão</Th>
-              <Th>Validade</Th>
-              <Th>
-                <span className="sr-only">Arquivo</span>
-              </Th>
-            </tr>
-          </THead>
-          <TBody>
-            {data.map((c) => (
-              <Tr key={c.id}>
-                <Td>
-                  <p className="font-medium text-ink">{c.typeName}</p>
-                  {c.number && <p className="font-mono text-xs text-slate-500">{c.number}</p>}
-                </Td>
-                <Td>
-                  <CndStatusBadge status={c.status} />
-                </Td>
-                <Td className="whitespace-nowrap text-xs">{formatDate(c.issuedAt)}</Td>
-                <Td className="whitespace-nowrap text-xs">
-                  {formatDate(c.validUntil)}
-                  <span className="block text-slate-500">
-                    {c.daysToExpire < 0 ? `vencida há ${-c.daysToExpire} dia(s)` : `${c.daysToExpire} dia(s)`}
-                  </span>
-                </Td>
-                <Td className="text-right">
-                  {c.hasFile && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Baixar ${c.typeName}`}
-                      loading={download.isPending && download.variables?.id === c.id}
-                      onClick={() => download.mutate(c)}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  )}
-                </Td>
-              </Tr>
-            ))}
-          </TBody>
-        </Table>
-      )}
-    </Card>
+    <div className="space-y-4">
+      <Card className="overflow-hidden">
+        <CardHeader
+          className="pb-4"
+          title="Certidões"
+          action={
+            <Button variant="secondary" size="sm" onClick={onManage}>
+              Gerenciar certidões
+            </Button>
+          }
+        />
+        {isLoading ? (
+          <Loading />
+        ) : data.length === 0 ? (
+          <div className="p-6">
+            <EmptyState icon={<ShieldCheck className="h-8 w-8" />} title="Nenhuma certidão cadastrada." />
+          </div>
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <Th>Certidão</Th>
+                <Th>Situação</Th>
+                <Th>Emissão</Th>
+                <Th>Validade</Th>
+                <Th>
+                  <span className="sr-only">Arquivo</span>
+                </Th>
+              </tr>
+            </THead>
+            <TBody>
+              {data.map((c) => (
+                <Tr key={c.id}>
+                  <Td>
+                    <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
+                      {c.typeName}
+                      {c.autoIssued && <Badge tone="brand">Automática</Badge>}
+                    </p>
+                    {c.number && <p className="font-mono text-xs text-slate-500">{c.number}</p>}
+                  </Td>
+                  <Td>
+                    <CndStatusBadge status={c.status} />
+                  </Td>
+                  <Td className="whitespace-nowrap text-xs">{formatDate(c.issuedAt)}</Td>
+                  <Td className="whitespace-nowrap text-xs">
+                    {formatDate(c.validUntil)}
+                    <span className="block text-slate-500">
+                      {c.daysToExpire < 0 ? `vencida há ${-c.daysToExpire} dia(s)` : `${c.daysToExpire} dia(s)`}
+                    </span>
+                  </Td>
+                  <Td className="text-right">
+                    {c.hasFile && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Baixar ${c.typeName}`}
+                        loading={download.isPending && download.variables?.id === c.id}
+                        onClick={() => download.mutate(c)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </Card>
+      <CndAutoIssueCard companyId={companyId} />
+    </div>
   )
 }
 
