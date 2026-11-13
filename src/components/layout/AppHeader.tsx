@@ -57,7 +57,7 @@ export function AppHeader() {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           onClick={() => setMobileOpen((o) => !o)}
           aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'}
           aria-expanded={mobileOpen}
@@ -73,7 +73,7 @@ export function AppHeader() {
           )}
         </NavLink>
 
-        <nav aria-label="Principal" className="mx-auto hidden h-full md:flex">
+        <nav aria-label="Principal" className="mx-auto hidden h-full lg:flex">
           {nav.map(({ to, label, end }) => (
             <NavLink
               key={to}
@@ -81,7 +81,7 @@ export function AppHeader() {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  'relative flex items-center px-5 text-sm font-semibold uppercase tracking-wide transition-colors',
+                  'relative flex items-center whitespace-nowrap px-3 text-sm font-semibold uppercase tracking-wide transition-colors xl:px-5',
                   isActive
                     ? 'text-brand-700 after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t after:bg-brand-600'
                     : 'text-slate-600 hover:text-ink',
@@ -93,7 +93,7 @@ export function AppHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1 md:ml-0">
+        <div className="ml-auto flex items-center gap-1 lg:ml-0">
           <NotificationBell />
           <Button variant="ghost" size="icon" aria-label="Ajuda" className="hidden sm:inline-flex">
             <CircleHelp className="h-5 w-5" />
@@ -110,11 +110,11 @@ export function AppHeader() {
                   className="ml-1 flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50"
                 >
                   <Avatar name={user.name} className="h-8 w-8" />
-                  <span className="hidden text-left leading-tight lg:block">
+                  <span className="hidden text-left leading-tight xl:block">
                     <span className="block text-sm font-medium text-ink">{user.name}</span>
                     <span className="block max-w-44 truncate text-xs text-slate-500">{user.office.name}</span>
                   </span>
-                  <ChevronDown className="hidden h-4 w-4 text-slate-400 lg:block" />
+                  <ChevronDown className="hidden h-4 w-4 text-slate-400 xl:block" />
                 </button>
               )}
             >
@@ -153,7 +153,7 @@ export function AppHeader() {
       </div>
 
       {mobileOpen && (
-        <nav aria-label="Principal (móvel)" className="border-t border-slate-100 bg-white px-2 py-2 md:hidden">
+        <nav aria-label="Principal (móvel)" className="border-t border-slate-100 bg-white px-2 py-2 lg:hidden">
           {nav.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
