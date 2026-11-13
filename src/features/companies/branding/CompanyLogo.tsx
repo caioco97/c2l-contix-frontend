@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Avatar } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import type { CompanyBranding } from '@/types/domain'
@@ -11,18 +12,24 @@ interface CompanyLogoProps {
 /** Logotipo da empresa; sem logotipo, as iniciais na cor da empresa. */
 export function CompanyLogo({ company, className }: CompanyLogoProps) {
   const url = useCompanyLogoUrl(company.id, company.branding)
+  // Logotipos quadrados (selo, ícone) preenchem o espaço todo; horizontais ganham moldura branca.
+  const [square, setSquare] = useState(false)
   const name = company.tradeName || company.legalName
   if (url)
     return (
       <span
         className={cn(
-          'flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white px-2 py-1',
+          'flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white',
           className,
-          // Logotipos costumam ser horizontais: a altura vem do tamanho pedido e a largura acompanha a imagem.
-          'w-auto min-w-11 max-w-28 sm:max-w-44',
+          square ? 'aspect-square w-auto p-0' : 'w-auto min-w-11 max-w-28 px-2 py-1 sm:max-w-44',
         )}
       >
-        <img src={url} alt={`Logotipo de ${name}`} className="h-full w-auto max-w-full object-contain" />
+        <img
+          src={url}
+          alt={`Logotipo de ${name}`}
+          onLoad={(e) => setSquare(e.currentTarget.naturalWidth <= e.currentTarget.naturalHeight * 1.25)}
+          className={cn('h-full max-w-full', square ? 'w-full object-cover' : 'w-auto object-contain')}
+        />
       </span>
     )
   return <Avatar name={name} className={cn('bg-brand-600 text-white', className)} />

@@ -116,7 +116,7 @@ export function CompanyDetailPage() {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <CompanyLogo company={c} className="h-12 w-12" />
+          <CompanyLogo company={c} className="h-16 w-16" />
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-semibold text-ink">{c.tradeName || c.legalName}</h1>
