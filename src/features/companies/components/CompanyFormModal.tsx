@@ -103,14 +103,25 @@ export function CompanyFormModal({ open, company, onClose, onSubmit }: Props) {
       setValue('state', d.address.state.toUpperCase(), opts)
     }
   }
+  const onDocumentChange = (value: string) => {
+    // Outro documento: o aviso e a consulta em andamento eram do anterior.
+    if (digits(value) !== lastLookup) {
+      setLookingUp(false)
+      setCnpjHint(undefined)
+    }
+    if (!company) lookupCnpj(value)
+  }
   const lookupCnpj = async (value: string, force = false) => {
     const cnpj = digits(value)
     if (cnpj.length !== 14 || !isValidCnpj(cnpj) || (!force && cnpj === lastLookup)) return
     setLastLookup(cnpj)
+    // Se o CNPJ do formulário mudou enquanto a consulta corria, a resposta é de outra empresa e é descartada.
+    const stale = () => digits(getValues('document')) !== cnpj
     setLookingUp(true)
     setCnpjHint('Consultando o CNPJ na Receita Federal…')
     try {
       const d = await nfeApi.lookupCnpj(cnpj)
+      if (stale()) return
       fillFromCnpj(d)
       setCnpjHint(
         d.active
@@ -118,9 +129,9 @@ export function CompanyFormModal({ open, company, onClose, onSubmit }: Props) {
           : `Atenção: situação cadastral ${d.registrationStatus ?? 'não ativa'} na Receita Federal.`,
       )
     } catch (e) {
-      setCnpjHint(getErrorMessage(e, 'Não foi possível consultar o CNPJ. Preencha os dados manualmente.'))
+      if (!stale()) setCnpjHint(getErrorMessage(e, 'Não foi possível consultar o CNPJ. Preencha os dados manualmente.'))
     } finally {
-      setLookingUp(false)
+      if (!stale()) setLookingUp(false)
     }
   }
 
@@ -204,7 +215,7 @@ export function CompanyFormModal({ open, company, onClose, onSubmit }: Props) {
                   mask="cpfCnpj"
                   id="company-document"
                   invalid={!!errors.document}
-                  {...register('document', { onChange: (e) => !company && lookupCnpj(e.target.value) })}
+                  {...register('document', { onChange: (e) => onDocumentChange(e.target.value) })}
                 />
               </div>
               <Button
