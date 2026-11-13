@@ -67,6 +67,41 @@ export interface DocumentoDto {
   updatedAt: string | null
   lido: boolean
   lidoEm: string | null
+  origem: OrigemDocumento
+  visualizacoesDestinatarios: number
+}
+
+export type OrigemDocumento = 'Escritorio' | 'Cliente'
+
+export interface AcessoDocumentoDto {
+  usuarioId: string
+  nome: string
+  email: string
+  ehDoEscritorio: boolean
+  visualizadoEm: string | null
+  ultimoDownloadEm: string | null
+  downloads: number
+  destinatario: boolean
+}
+
+export interface AcessosDocumentoDto {
+  documentoId: string
+  origem: OrigemDocumento
+  totalDestinatarios: number
+  destinatariosQueVisualizaram: number
+  usuarios: AcessoDocumentoDto[]
+}
+
+export type TipoEventoDocumento = 'Upload' | 'Visualizacao' | 'Download' | 'Envio' | 'Exclusao'
+
+export interface EventoDocumentoDto {
+  id: string
+  tipo: TipoEventoDocumento
+  ocorridoEm: string
+  usuarioId: string
+  usuarioNome: string
+  ehDoEscritorio: boolean
+  detalhe: string | null
 }
 
 export interface VencimentoDto {
