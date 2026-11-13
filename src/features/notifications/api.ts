@@ -15,6 +15,7 @@ const TYPE_FROM_API: Record<TipoNotificacaoDto, NotificationType> = {
   NovaNoticia: 'NewNews',
   CertidaoVencimento: 'CndExpiring',
   TarefaAtribuida: 'TaskAssigned',
+  EmissaoCertidaoFalha: 'CndIssueFailed',
 }
 const TYPE_TO_API = Object.fromEntries(Object.entries(TYPE_FROM_API).map(([k, v]) => [v, k])) as Record<
   NotificationType,

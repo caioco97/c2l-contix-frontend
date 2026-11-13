@@ -12,6 +12,7 @@ const ICONS: Record<NotificationType, typeof FileText> = {
   NewNews: Megaphone,
   CndExpiring: ShieldAlert,
   TaskAssigned: ClipboardCheck,
+  CndIssueFailed: ShieldAlert,
 }
 
 const TONES: Record<NotificationType, string> = {
@@ -22,6 +23,7 @@ const TONES: Record<NotificationType, string> = {
   NewNews: 'bg-sky-50 text-sky-600',
   CndExpiring: 'bg-red-50 text-red-600',
   TaskAssigned: 'bg-orange-50 text-orange-600',
+  CndIssueFailed: 'bg-red-50 text-red-600',
 }
 
 function timeAgo(iso: string) {

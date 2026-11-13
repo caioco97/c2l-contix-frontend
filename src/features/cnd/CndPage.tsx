@@ -191,7 +191,10 @@ function CompanyCnds({
             {data.map((c) => (
               <Tr key={c.id} className={cn(!c.isCurrent && 'text-slate-400')}>
                 <Td>
-                  <p className="font-medium text-ink">{c.typeName}</p>
+                  <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
+                    {c.typeName}
+                    {c.autoIssued && <Badge tone="brand">Automática</Badge>}
+                  </p>
                   {c.number && <p className="text-xs text-slate-500">Nº {c.number}</p>}
                 </Td>
                 <Td>{situationLabel(c.situation)}</Td>
@@ -313,7 +316,12 @@ function Dashboard({ onRenew, onOpenCompany }: { onRenew: (c: Cnd) => void; onOp
                       {c.companyName}
                     </button>
                   </Td>
-                  <Td>{c.typeName}</Td>
+                  <Td>
+                    <span className="flex flex-wrap items-center gap-2">
+                      {c.typeName}
+                      {c.autoIssued && <Badge tone="brand">Automática</Badge>}
+                    </span>
+                  </Td>
                   <Td>
                     <p>{formatDate(c.validUntil)}</p>
                     <p className="text-xs text-slate-500">{expiryText(c)}</p>
