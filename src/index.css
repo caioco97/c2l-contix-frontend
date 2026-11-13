@@ -28,6 +28,42 @@
   body {
     @apply bg-surface text-ink antialiased;
   }
+
+  /*
+   * O preflight do Tailwind v4 deixa botões com cursor padrão. Aqui todo
+   * elemento clicável ganha a "mãozinha" e os desabilitados mostram que não
+   * aceitam clique. Por estar em @layer base, utilitários como cursor-default
+   * continuam sobrescrevendo quando necessário.
+   */
+  button,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  a[href],
+  select,
+  summary,
+  label[for],
+  input[type='checkbox'],
+  input[type='radio'],
+  input[type='file'],
+  input[type='color'],
+  input[type='range'],
+  input[type='button'],
+  input[type='submit'],
+  input[type='reset'],
+  input::file-selector-button {
+    cursor: pointer;
+  }
+
+  :disabled,
+  [aria-disabled='true'],
+  :disabled::file-selector-button {
+    cursor: not-allowed;
+  }
 }
 
 /* Conteúdo rico das notícias (editor e leitura no portal). */

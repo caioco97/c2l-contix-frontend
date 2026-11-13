@@ -145,7 +145,6 @@ export function CompaniesPage() {
                   return (
                     <Tr
                       key={c.id}
-                      className="cursor-pointer"
                       tabIndex={0}
                       onClick={() => navigate(href)}
                       onKeyDown={(e) => e.key === 'Enter' && navigate(href)}

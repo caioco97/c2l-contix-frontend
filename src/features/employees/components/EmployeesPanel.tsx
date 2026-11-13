@@ -151,7 +151,7 @@ export function EmployeesPanel({ companyId, editable, requestHref }: Props) {
             </THead>
             <TBody>
               {data.map((e) => (
-                <Tr key={e.id} className="cursor-pointer" onClick={() => setViewing(e)}>
+                <Tr key={e.id} onClick={() => setViewing(e)}>
                   <Td>
                     <button type="button" className="text-left font-medium text-ink hover:underline" onClick={() => setViewing(e)}>
                       {e.name}
