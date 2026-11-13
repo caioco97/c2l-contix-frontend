@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Modal, useToast } from '@/components/ui'
 import { getErrorMessage } from '@/lib/api'
-import { formatCnpj } from '@/lib/format'
+import { formatCpfCnpj } from '@/lib/br'
 import { companiesApi, companyKeys } from '../api'
 
 export interface CompanyToDelete {
@@ -61,7 +61,7 @@ export function DeleteCompanyModal({ company, onClose, onDeleted }: Props) {
             <p className="font-medium text-ink">{name}</p>
             <p className="text-xs text-slate-500">
               {company.tradeName && company.tradeName !== company.legalName ? `${company.legalName} · ` : ''}
-              <span className="font-mono">{formatCnpj(company.document)}</span>
+              <span className="font-mono">{formatCpfCnpj(company.document)}</span>
             </p>
           </div>
           <ul className="list-disc space-y-1 pl-5">

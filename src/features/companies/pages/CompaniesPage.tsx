@@ -5,7 +5,7 @@ import { Building2, ChevronLeft, ChevronRight, Plus, Search, Trash2 } from 'luci
 import { Badge, Button, Card, EmptyState, Input, Select, Skeleton, Table, TBody, Td, Th, THead, Tr, useToast } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { getErrorMessage } from '@/lib/api'
-import { formatCnpj } from '@/lib/format'
+import { formatCpfCnpj } from '@/lib/br'
 import type { CompanyInput, CompanyStatus, TaxRegime } from '@/types/domain'
 import { companiesApi, companyKeys, type CompanyFilters } from '../api'
 import { CompanyFormModal } from '../components/CompanyFormModal'
@@ -157,7 +157,7 @@ export function CompaniesPage() {
                           {c.nickname && <span className="ml-1 font-mono">{c.nickname}</span>}
                         </p>
                       </Td>
-                      <Td className="whitespace-nowrap font-mono text-xs">{formatCnpj(c.document)}</Td>
+                      <Td className="whitespace-nowrap font-mono text-xs">{formatCpfCnpj(c.document)}</Td>
                       <Td>{regimeLabel(c.taxRegime)}</Td>
                       <Td>
                         <Badge tone={s.tone}>{s.label}</Badge>

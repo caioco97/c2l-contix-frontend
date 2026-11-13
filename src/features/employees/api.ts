@@ -1,3 +1,4 @@
+import { phoneDigits } from '@/lib/br'
 import { api } from '@/lib/api'
 import { env } from '@/config/env'
 import { mockDelay, mockError } from '@/lib/mock'
@@ -103,7 +104,7 @@ function toApi(input: EmployeeInput) {
     dataAdmissao: txt(input.admissionDate),
     dataDesligamento: input.status === 'Desligado' ? txt(input.terminationDate) : null,
     email: txt(input.email),
-    telefone: txt(input.phone),
+    telefone: txt(phoneDigits(input.phone)),
   }
 }
 

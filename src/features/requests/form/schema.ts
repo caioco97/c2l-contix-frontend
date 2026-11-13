@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { digits, phoneDigits } from '@/lib/br'
+import { br } from '@/lib/zodBr'
 import type { Department, ServiceRequestType, ServiceRequestTypeCode } from '@/types/domain'
 
 /** Valores do formulário de nova solicitação. Os campos de `data` usam os nomes da API. */
@@ -75,18 +77,6 @@ export function defaultValues(type: ServiceRequestType | undefined): RequestForm
 
 /* ---------- Validação (espelha a da API, para dar retorno imediato) ---------- */
 
-export function cpfValido(valor: string) {
-  const d = valor.replace(/\D/g, '')
-  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false
-  const digito = (n: number) => {
-    let soma = 0
-    for (let i = 0; i < n; i++) soma += Number(d[i]) * (n + 1 - i)
-    const resto = (soma * 10) % 11
-    return resto === 10 ? 0 : resto
-  }
-  return digito(9) === Number(d[9]) && digito(10) === Number(d[10])
-}
-
 const req = (msg = 'Campo obrigatório.') => z.string().trim().min(1, msg)
 const opt = z.string()
 const positivo = (msg: string) =>
@@ -97,7 +87,10 @@ function pessoa(code: ServiceRequestTypeCode) {
   return z
     .object({
       nome: req('Informe o nome.'),
-      cpf: req('Informe o CPF.').refine(cpfValido, 'CPF inválido.'),
+      cpf: br.cpf(),
+      pis: br.pis(),
+      telefone: br.celular(),
+      endereco: z.object({ cep: br.cep(), uf: br.uf() }),
       dataNascimento: req('Informe a data de nascimento.'),
       email: z.union([z.literal(''), z.email('E-mail inválido.')]),
       cargo: req(code === 'CadastroContribuinte' ? 'Informe a função.' : 'Informe o cargo.'),
@@ -211,9 +204,11 @@ export function toApiData(code: ServiceRequestTypeCode, d: RequestData): Record<
       const e = d.endereco
       const temEndereco = Object.values(e).some((v) => v.trim())
       return {
-        nome: d.nome.trim(), cpf: d.cpf, rg: txt(d.rg), pis: txt(d.pis), dataNascimento: d.dataNascimento,
-        email: txt(d.email), telefone: txt(d.telefone),
-        endereco: temEndereco ? Object.fromEntries(Object.entries(e).map(([k, v]) => [k, txt(v)])) : undefined,
+        nome: d.nome.trim(), cpf: digits(d.cpf), rg: txt(d.rg), pis: txt(digits(d.pis)), dataNascimento: d.dataNascimento,
+        email: txt(d.email), telefone: txt(phoneDigits(d.telefone)),
+        endereco: temEndereco
+          ? { ...Object.fromEntries(Object.entries(e).map(([k, v]) => [k, txt(v)])), cep: txt(digits(e.cep)) }
+          : undefined,
         cargo: txt(d.cargo), salario: num(d.salario), jornada: txt(d.jornada), dataAdmissao: txt(d.dataAdmissao),
         instituicaoEnsino: txt(d.instituicaoEnsino), curso: txt(d.curso), dataTerminoEstagio: txt(d.dataTerminoEstagio),
       }

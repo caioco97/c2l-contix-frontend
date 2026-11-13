@@ -1,9 +1,10 @@
 import { useFieldArray, useFormContext, type FieldPath } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { Plus, Trash2 } from 'lucide-react'
-import { Button, Checkbox, FormField, Input, Select } from '@/components/ui'
+import { Button, Checkbox, FormField, Input, MaskedInput, Select, UfSelect, type MaskKind } from '@/components/ui'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
 import { EmployeeSelect } from '@/features/employees/components/EmployeeSelect'
+import { useCepLookup } from '@/lib/cep'
 import type { ServiceRequestTypeCode } from '@/types/domain'
 import { optionsOf } from '../meta'
 import { emptyRubrica, type RequestFormValues } from './schema'
@@ -25,6 +26,8 @@ function Field({
   hint,
   type = 'text',
   className,
+  mask,
+  onValueChange,
   ...rest
 }: {
   name: Name
@@ -33,6 +36,8 @@ function Field({
   hint?: string
   type?: string
   className?: string
+  mask?: MaskKind
+  onValueChange?: (value: string) => void
   placeholder?: string
   inputMode?: 'decimal' | 'numeric' | 'text'
   maxLength?: number
@@ -45,7 +50,11 @@ function Field({
   return (
     <div className={className}>
       <FormField label={label} htmlFor={name} error={error} hint={hint} required={required}>
-        <Input id={name} type={type} invalid={!!error} {...rest} {...register(name)} />
+        {mask ? (
+          <MaskedInput id={name} mask={mask} invalid={!!error} {...rest} {...register(name, { onChange: (e) => onValueChange?.(e.target.value) })} />
+        ) : (
+          <Input id={name} type={type} invalid={!!error} {...rest} {...register(name)} />
+        )}
       </FormField>
     </div>
   )
@@ -119,31 +128,50 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 const grid = 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
 
+function UfField({ name }: { name: Name }) {
+  const { register } = useFormContext<RequestFormValues>()
+  const error = useFieldError(name)
+  return (
+    <FormField label="UF" htmlFor={name} error={error}>
+      <UfSelect id={name} invalid={!!error} {...register(name)} />
+    </FormField>
+  )
+}
+
 function PessoaFields({ code }: { code: ServiceRequestTypeCode }) {
   const contribuinte = code === 'CadastroContribuinte'
   const estagio = code === 'CadastroEstagiario'
+  const { setValue, setFocus } = useFormContext<RequestFormValues>()
+  const cep = useCepLookup((a) => {
+    const opts = { shouldDirty: true, shouldValidate: true }
+    setValue('data.endereco.logradouro', a.street, opts)
+    setValue('data.endereco.bairro', a.district, opts)
+    setValue('data.endereco.cidade', a.city, opts)
+    setValue('data.endereco.uf', a.state.toUpperCase(), opts)
+    setFocus(a.street ? 'data.endereco.numero' : 'data.endereco.logradouro')
+  })
   return (
     <div className="space-y-6">
       <Section title="Dados pessoais">
         <div className={grid}>
           <Field name="data.nome" label="Nome completo" required className="sm:col-span-2" />
           <Field name="data.dataNascimento" label="Data de nascimento" type="date" required />
-          <Field name="data.cpf" label="CPF" required placeholder="000.000.000-00" inputMode="numeric" maxLength={14} />
+          <Field name="data.cpf" label="CPF" required mask="cpf" />
           <Field name="data.rg" label="RG" />
-          <Field name="data.pis" label="PIS/PASEP/NIT" inputMode="numeric" maxLength={14} />
+          <Field name="data.pis" label="PIS/PASEP/NIT" mask="pis" />
           <Field name="data.email" label="E-mail" type="email" />
-          <Field name="data.telefone" label="Telefone" inputMode="numeric" />
+          <Field name="data.telefone" label="Celular" mask="phone" />
         </div>
       </Section>
       <Section title="Endereço">
         <div className={grid}>
-          <Field name="data.endereco.cep" label="CEP" inputMode="numeric" maxLength={9} />
+          <Field name="data.endereco.cep" label="CEP" mask="cep" hint={cep.hint} onValueChange={cep.lookup} />
           <Field name="data.endereco.logradouro" label="Logradouro" className="sm:col-span-2" />
           <Field name="data.endereco.numero" label="Número" />
           <Field name="data.endereco.complemento" label="Complemento" />
           <Field name="data.endereco.bairro" label="Bairro" />
           <Field name="data.endereco.cidade" label="Cidade" className="sm:col-span-2" />
-          <Field name="data.endereco.uf" label="UF" maxLength={2} />
+          <UfField name="data.endereco.uf" />
         </div>
       </Section>
       <Section title={estagio ? 'Estágio' : contribuinte ? 'Contribuição' : 'Contrato de trabalho'}>

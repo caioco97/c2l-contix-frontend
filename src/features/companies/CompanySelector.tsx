@@ -3,7 +3,7 @@ import { ArrowLeftRight, Building2, Check, ChevronDown, Search } from 'lucide-re
 import { Avatar, Button, EmptyState, Input, Skeleton, Spinner } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
-import { formatCnpj } from '@/lib/format'
+import { formatCpfCnpj } from '@/lib/br'
 import type { Company } from '@/types/domain'
 import { useActiveCompany } from './ActiveCompanyContext'
 
@@ -118,7 +118,7 @@ export function CompanyList({ companies, selectedId, onSelect, autoFocus, classN
                     {c.legalName}
                   </span>
                   <span className="block truncate text-xs text-slate-500">
-                    {[c.tradeName !== c.legalName ? c.tradeName : null, formatCnpj(c.document), c.nickname]
+                    {[c.tradeName !== c.legalName ? c.tradeName : null, formatCpfCnpj(c.document), c.nickname]
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
@@ -204,7 +204,7 @@ export function CompanyContextBar({ width = 'default' }: CompanyContextBarProps)
               <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700">Empresa selecionada</p>
               <p className="truncate text-base font-semibold text-ink sm:text-lg">{company.legalName}</p>
               <p className="truncate text-xs text-slate-500">
-                CNPJ {formatCnpj(company.document)}
+                {company.document.length === 11 ? 'CPF' : 'CNPJ'} {formatCpfCnpj(company.document)}
                 {company.nickname ? ` · ${company.nickname}` : ''}
               </p>
             </div>
