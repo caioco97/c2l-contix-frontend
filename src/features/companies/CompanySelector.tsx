@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn'
 import { formatCpfCnpj } from '@/lib/br'
 import type { Company } from '@/types/domain'
 import { useActiveCompany } from './ActiveCompanyContext'
+import { CompanyLogo } from './branding/CompanyLogo'
 
 /*
  * Seleção de empresa padronizada para as telas que trabalham com uma empresa por vez
@@ -199,7 +200,7 @@ export function CompanyContextBar({ width = 'default' }: CompanyContextBarProps)
           <Skeleton className="h-11 w-80" />
         ) : company ? (
           <div className="flex min-w-[15rem] flex-1 items-center gap-3">
-            <Avatar name={company.tradeName || company.legalName} className="h-11 w-11 bg-brand-600 text-white" />
+            <CompanyLogo company={company} className="h-11 w-11" />
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-700">Empresa selecionada</p>
               <p className="truncate text-base font-semibold text-ink sm:text-lg">{company.legalName}</p>

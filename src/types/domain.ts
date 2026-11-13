@@ -6,6 +6,17 @@ export interface Company {
   document: string
   /** Usuário do cliente: módulos do portal liberados nesta empresa. Ausente para o escritório (acesso total). */
   modules?: PortalModule[] | null
+  /** Identidade visual da empresa aplicada no portal do cliente. */
+  branding?: CompanyBranding | null
+}
+
+/** Identidade visual da empresa no portal: cores (#rrggbb) e logotipo. Nulos usam o padrão do Contix. */
+export interface CompanyBranding {
+  primaryColor: string | null
+  secondaryColor: string | null
+  hasLogo: boolean
+  /** Muda a cada troca de logotipo (renova o cache da imagem). */
+  logoVersion: string | null
 }
 
 /** Módulos do portal do cliente liberados por usuário e empresa (códigos da API). */
@@ -42,9 +53,10 @@ export interface CompanyDetail extends CompanySummary {
   phone: string | null
   address: Address | null
   createdAt: string
+  branding: CompanyBranding
 }
 
-export type CompanyInput = Omit<CompanyDetail, 'id' | 'createdAt'>
+export type CompanyInput = Omit<CompanyDetail, 'id' | 'createdAt' | 'branding'>
 
 /** Indicadores da página da empresa. */
 export interface CompanyPanel {
