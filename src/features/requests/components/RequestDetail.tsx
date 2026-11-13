@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
   ArrowRight,
@@ -104,6 +105,18 @@ function Summary({ request: r, isOffice }: { request: ServiceRequestDetail; isOf
     { label: 'Prazo', value: due },
     { label: 'Responsável', value: r.assigneeName ?? (isOffice ? 'Sem responsável' : 'Aguardando atribuição') },
   ]
+  if (r.employeeId && r.employeeName)
+    rows.splice(1, 0, {
+      label: 'Empregado',
+      value: (
+        <Link
+          to={isOffice ? `/empresas/${r.companyId}?aba=empregados` : '/portal/empregados'}
+          className="font-medium text-brand-700 hover:underline"
+        >
+          {r.employeeName}
+        </Link>
+      ),
+    })
   if (r.closedAt) rows.push({ label: 'Finalizada em', value: formatDateTime(r.closedAt) })
   return (
     <Card>
@@ -144,7 +157,8 @@ function RequestData({ request: r }: { request: ServiceRequestDetail }) {
   // O jsonb do PostgreSQL não preserva a ordem das chaves: ordena pela ordem dos rótulos.
   const order = Object.keys(dataLabels)
   const entries = Object.entries(r.data ?? {})
-    .filter(([k]) => k !== 'lancamentos')
+    // O id do empregado não é exibido: o nome (gravado a partir do cadastro) já aparece.
+    .filter(([k]) => k !== 'lancamentos' && k !== 'empregadoId')
     .sort(([a], [b]) => (order.indexOf(a) + 1 || 999) - (order.indexOf(b) + 1 || 999))
   const lancamentos = (r.data?.lancamentos ?? []) as Record<string, unknown>[]
   if (!entries.length && !lancamentos.length) return null

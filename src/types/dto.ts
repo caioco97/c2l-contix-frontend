@@ -233,6 +233,8 @@ export interface SolicitacaoResumoDto {
   atrasada: boolean
   createdAt: string
   updatedAt: string | null
+  empregadoId: string | null
+  empregadoNome: string | null
 }
 
 export interface AnexoDto {
@@ -411,6 +413,29 @@ export interface PainelCertidoesDto {
   aVencer30Dias: number
   irregulares: number
   itens: CertidaoDto[]
+}
+
+/* ---------- Empregados ---------- */
+
+export type VinculoEmpregadoDto = 'Empregado' | 'Contribuinte' | 'Estagiario'
+export type SituacaoEmpregadoDto = 'Ativo' | 'Afastado' | 'Desligado'
+
+export interface EmpregadoDto {
+  id: string
+  empresaId: string
+  nome: string
+  cpf: string | null
+  matricula: string | null
+  cargo: string | null
+  vinculo: VinculoEmpregadoDto
+  situacao: SituacaoEmpregadoDto
+  dataAdmissao: string | null
+  dataDesligamento: string | null
+  email: string | null
+  telefone: string | null
+  solicitacaoOrigemId: string | null
+  createdAt: string
+  updatedAt: string | null
 }
 
 /* ---------- Tarefas ---------- */

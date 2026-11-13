@@ -1,5 +1,6 @@
 import { addDays, formatISO, setDate, startOfDay } from 'date-fns'
 import type {
+  Employee,
   Cnd,
   Company,
   DocumentFolder,
@@ -293,6 +294,8 @@ function mockRequest(r: Pick<ServiceRequestDetail, 'id' | 'number' | 'typeCode' 
     assigneeName: null,
     dueDate: d(-r.daysAgo + type.deadlineDays).slice(0, 10),
     isOverdue: false,
+    employeeId: null,
+    employeeName: null,
     createdAt,
     updatedAt: createdAt,
     description: null,
@@ -310,7 +313,8 @@ export const mockRequests: ServiceRequestDetail[] = [
   mockRequest({
     id: 'sr-1', number: 3, typeCode: 'CalculoFerias', subject: 'Cálculo de Férias - João Pereira', department: 'Pessoal',
     status: 'InAnalysis', daysAgo: 2, assigneeId: 'u-1', assigneeName: 'Carla Mendes',
-    data: { empregado: 'João Pereira', periodoAquisitivoInicio: '2025-01-02', periodoAquisitivoFim: '2026-01-01', dataInicio: '2026-12-01', dias: 30, abonoPecuniario: false, adiantamento13: true },
+    employeeId: 'e-2', employeeName: 'João Pereira',
+    data: { empregadoId: 'e-2', empregado: 'João Pereira', periodoAquisitivoInicio: '2025-01-02', periodoAquisitivoFim: '2026-01-01', dataInicio: '2026-12-01', dias: 30, abonoPecuniario: false, adiantamento13: true },
   }),
   mockRequest({
     id: 'sr-2', number: 2, typeCode: 'Geral', subject: 'Segunda via do contrato social', department: 'Societario',
@@ -318,8 +322,16 @@ export const mockRequests: ServiceRequestDetail[] = [
   }),
   mockRequest({
     id: 'sr-3', number: 1, typeCode: 'CadastroEmpregado', subject: 'Cadastro de Empregado - Ana Martins', department: 'Pessoal',
-    status: 'Done', daysAgo: 20,
+    status: 'Done', daysAgo: 20, employeeId: 'e-3', employeeName: 'Ana Martins',
   }),
+]
+
+export const mockEmployeeList: Employee[] = [
+  { id: 'e-1', companyId: 'c-1', name: 'Maria Souza', cpf: '52998224725', registration: '0001', role: 'Analista financeira', bond: 'Empregado', status: 'Ativo', admissionDate: '2024-11-01', terminationDate: null, email: null, phone: null, originRequestId: null, createdAt: '2024-11-01T12:00:00Z' },
+  { id: 'e-2', companyId: 'c-1', name: 'João Pereira', cpf: '11144477735', registration: '0002', role: 'Vendedor', bond: 'Empregado', status: 'Ativo', admissionDate: '2025-08-01', terminationDate: null, email: null, phone: null, originRequestId: null, createdAt: '2025-08-01T12:00:00Z' },
+  { id: 'e-3', companyId: 'c-1', name: 'Ana Martins', cpf: '39053344705', registration: '0003', role: 'Assistente administrativa', bond: 'Empregado', status: 'Ativo', admissionDate: '2026-07-01', terminationDate: null, email: null, phone: null, originRequestId: 'sr-3', createdAt: '2026-07-01T12:00:00Z' },
+  { id: 'e-4', companyId: 'c-1', name: 'Carlos Lima', cpf: '15350946056', registration: '0004', role: 'Sócio-administrador', bond: 'Contribuinte', status: 'Ativo', admissionDate: '2021-01-04', terminationDate: null, email: null, phone: null, originRequestId: null, createdAt: '2021-01-04T12:00:00Z' },
+  { id: 'e-5', companyId: 'c-1', name: 'Paulo Ramos', cpf: null, registration: null, role: 'Auxiliar', bond: 'Empregado', status: 'Desligado', admissionDate: '2023-02-01', terminationDate: '2026-06-30', email: null, phone: null, originRequestId: null, createdAt: '2023-02-01T12:00:00Z' },
 ]
 
 /** Tarefas de demonstração da primeira empresa, com prazos relativos a hoje. */
