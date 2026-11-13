@@ -14,8 +14,9 @@ import { CompanyUsersTab } from '../components/CompanyUsersTab'
 import { DeleteCompanyModal } from '../components/DeleteCompanyModal'
 import { CndTab, DocumentsTab, HistoryTab, RequestsTab } from '../components/CompanyActivityTabs'
 import { regimeLabel, statusOf } from '../meta'
+import { CompanyTasksTab } from '@/features/tasks/components/CompanyTasksTab'
 
-const TABS = ['dados', 'usuarios', 'documentos', 'solicitacoes', 'cnd', 'historico'] as const
+const TABS = ['dados', 'usuarios', 'documentos', 'solicitacoes', 'tarefas', 'cnd', 'historico'] as const
 type Tab = (typeof TABS)[number]
 
 /** Página da empresa para o escritório: cadastro, usuários do portal e tudo o que aconteceu com ela. */
@@ -137,6 +138,7 @@ export function CompanyDetailPage() {
           { value: 'usuarios', label: 'Usuários', count: p?.pendingInvites },
           { value: 'documentos', label: 'Documentos', count: p?.receivedUnread },
           { value: 'solicitacoes', label: 'Solicitações', count: p?.openRequests },
+          { value: 'tarefas', label: 'Tarefas', count: p?.openTasks },
           { value: 'cnd', label: 'Certidões', count: p ? p.expiredCnds + p.expiringCnds : undefined },
           { value: 'historico', label: 'Histórico' },
         ]}
@@ -148,6 +150,7 @@ export function CompanyDetailPage() {
       )}
       {tab === 'documentos' && <DocumentsTab companyId={companyId} onOpen={() => openAs('/documentos')} />}
       {tab === 'solicitacoes' && <RequestsTab companyId={companyId} />}
+      {tab === 'tarefas' && <CompanyTasksTab companyId={companyId} />}
       {tab === 'cnd' && <CndTab companyId={companyId} onManage={() => openAs('/certidoes')} />}
       {tab === 'historico' && <HistoryTab companyId={companyId} />}
 
@@ -201,6 +204,13 @@ function Overview({
       alert: !!panel?.overdueRequests,
     },
     {
+      label: 'Tarefas em aberto',
+      value: panel?.openTasks,
+      hint: panel?.overdueTasks ? `${panel.overdueTasks} atrasada(s)` : undefined,
+      tab: 'tarefas',
+      alert: !!panel?.overdueTasks,
+    },
+    {
       label: 'Certidões vencidas',
       value: panel?.expiredCnds,
       hint: panel?.expiringCnds ? `${panel.expiringCnds} vencendo em 30 dias` : undefined,
@@ -238,7 +248,7 @@ function Overview({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {tiles.map((t) => (
           <button
             key={t.label}

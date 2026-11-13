@@ -1,6 +1,6 @@
 import { formatISO } from 'date-fns'
-import type { Cnd, DocumentItem, NewsDetail, OfficeNewsDetail, ServiceRequestDetail } from '@/types/domain'
-import { mockCnds, mockDocuments, mockNews, mockRequests } from './data'
+import type { Cnd, DocumentItem, NewsDetail, OfficeNewsDetail, ServiceRequestDetail, TaskDetail } from '@/types/domain'
+import { mockCnds, mockDocuments, mockNews, mockRequests, mockTasks } from './data'
 
 /**
  * Estado mutável dos mocks, por empresa, para simular leitura, upload e exclusão
@@ -35,6 +35,8 @@ const requests = new Map<string, ServiceRequestDetail[]>([
   ['c-2', []],
 ])
 
+const tasks = new Map<string, TaskDetail[]>([['c-1', mockTasks()]])
+
 export const mockStore = {
   documents: (companyId: string) => {
     if (!documents.has(companyId)) documents.set(companyId, [])
@@ -54,5 +56,10 @@ export const mockStore = {
     return requests.get(companyId)!
   },
   allRequests: () => [...requests.values()].flat(),
+  tasks: (companyId: string) => {
+    if (!tasks.has(companyId)) tasks.set(companyId, [])
+    return tasks.get(companyId)!
+  },
+  allTasks: () => [...tasks.values()].flat(),
   now: () => formatISO(new Date()),
 }

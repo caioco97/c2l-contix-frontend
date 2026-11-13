@@ -81,6 +81,8 @@ export interface PainelEmpresaDto {
   solicitacoesAtrasadas: number
   certidoesVencidas: number
   certidoesAVencer: number
+  tarefasEmAberto: number
+  tarefasAtrasadas: number
 }
 
 export interface ItemHistoricoEmpresaDto {
@@ -280,6 +282,7 @@ export type TipoNotificacaoDto =
   | 'SolicitacaoAtualizada'
   | 'NovaNoticia'
   | 'CertidaoVencimento'
+  | 'TarefaAtribuida'
 
 export interface NotificacaoDto {
   id: string
@@ -408,4 +411,59 @@ export interface PainelCertidoesDto {
   aVencer30Dias: number
   irregulares: number
   itens: CertidaoDto[]
+}
+
+/* ---------- Tarefas ---------- */
+
+export type StatusTarefaDto = 'Pendente' | 'EmAndamento' | 'Concluida' | 'Cancelada'
+export type TipoInteracaoTarefaDto = 'Criacao' | 'Comentario' | 'MudancaStatus' | 'Edicao'
+
+export interface TarefaResumoDto {
+  id: string
+  numero: number
+  empresaId: string
+  empresaNome: string
+  titulo: string
+  departamento: DepartamentoDto
+  status: StatusTarefaDto
+  responsavelId: string
+  responsavelNome: string
+  prazoInterno: string
+  prazoLegal: string | null
+  atrasada: boolean
+  prazoLegalVencido: boolean
+  comentarios: number
+  anexos: number
+  createdAt: string
+  updatedAt: string | null
+}
+
+export interface AnexoTarefaDto {
+  id: string
+  nomeArquivo: string
+  contentType: string
+  tamanhoBytes: number
+  enviadoPorNome: string
+  createdAt: string
+}
+
+export interface InteracaoTarefaDto {
+  id: string
+  tipo: TipoInteracaoTarefaDto
+  mensagem: string | null
+  statusAnterior: StatusTarefaDto | null
+  statusNovo: StatusTarefaDto | null
+  autorId: string
+  autorNome: string
+  createdAt: string
+  anexos: AnexoTarefaDto[]
+}
+
+export interface TarefaDto extends Omit<TarefaResumoDto, 'comentarios' | 'anexos'> {
+  descricao: string | null
+  criadoPorId: string
+  criadoPorNome: string
+  concluidaEm: string | null
+  transicoesPermitidas: StatusTarefaDto[]
+  historico: InteracaoTarefaDto[]
 }

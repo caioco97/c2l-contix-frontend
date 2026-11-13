@@ -56,6 +56,8 @@ export interface CompanyPanel {
   overdueRequests: number
   expiredCnds: number
   expiringCnds: number
+  openTasks: number
+  overdueTasks: number
 }
 
 export type HistoryCategory = 'Documento' | 'Solicitacao' | 'Certidao' | 'Usuario'
@@ -391,7 +393,14 @@ export interface OfficeUser {
 
 /* ---------- Notificações ---------- */
 
-export type NotificationType = 'NewDocument' | 'DueSoon' | 'NewRequest' | 'RequestUpdated' | 'NewNews' | 'CndExpiring'
+export type NotificationType =
+  | 'NewDocument'
+  | 'DueSoon'
+  | 'NewRequest'
+  | 'RequestUpdated'
+  | 'NewNews'
+  | 'CndExpiring'
+  | 'TaskAssigned'
 
 export interface AppNotification {
   id: string
@@ -410,4 +419,60 @@ export interface NotificationPreference {
   type: NotificationType
   label: string
   email: boolean
+}
+
+/* ---------- Tarefas (internas do escritório) ---------- */
+
+export type TaskStatus = 'Pending' | 'InProgress' | 'Done' | 'Canceled'
+
+export interface Task {
+  id: string
+  number: number
+  companyId: string
+  companyName: string
+  title: string
+  department: Department
+  status: TaskStatus
+  assigneeId: string
+  assigneeName: string
+  /** Prazo interno (yyyy-MM-dd). */
+  internalDueDate: string
+  /** Prazo legal da obrigação (yyyy-MM-dd), opcional. */
+  legalDueDate: string | null
+  /** Prazo interno vencido sem finalizar. */
+  isOverdue: boolean
+  /** Prazo legal vencido sem finalizar. */
+  isLegalOverdue: boolean
+  comments: number
+  attachments: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TaskEvent {
+  id: string
+  kind: 'created' | 'comment' | 'status' | 'edit'
+  message: string | null
+  fromStatus: TaskStatus | null
+  toStatus: TaskStatus | null
+  authorName: string
+  createdAt: string
+  attachments: RequestAttachment[]
+}
+
+export interface TaskDetail extends Task {
+  description: string | null
+  createdByName: string
+  completedAt: string | null
+  allowedTransitions: TaskStatus[]
+  history: TaskEvent[]
+}
+
+export interface TaskInput {
+  title: string
+  description: string | null
+  department: Department
+  assigneeId: string
+  internalDueDate: string
+  legalDueDate: string | null
 }
