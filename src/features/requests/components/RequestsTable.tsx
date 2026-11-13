@@ -36,7 +36,6 @@ export function RequestsTable({ items, office, hrefOf }: Props) {
           return (
             <Tr
               key={r.id}
-              className="cursor-pointer"
               onClick={() => navigate(href)}
               onKeyDown={(e) => e.key === 'Enter' && navigate(href)}
               tabIndex={0}

@@ -19,7 +19,13 @@ export function TBody(props: HTMLAttributes<HTMLTableSectionElement>) {
 }
 
 export function Tr({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn('transition-colors hover:bg-slate-50', className)} {...props} />
+  // Linhas clicáveis (com onClick) ganham o cursor de mãozinha automaticamente.
+  return (
+    <tr
+      className={cn('transition-colors hover:bg-slate-50', props.onClick && 'cursor-pointer', className)}
+      {...props}
+    />
+  )
 }
 
 export function Th({ className, ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
@@ -46,7 +52,7 @@ export function SortableTh({ active, direction, onSort, children, className, ...
       className={className}
       {...props}
     >
-      <button type="button" onClick={onSort} className="inline-flex items-center gap-1 hover:text-ink">
+      <button type="button" onClick={onSort} className="inline-flex cursor-pointer items-center gap-1 hover:text-ink">
         {children}
         <Icon className={cn('h-3.5 w-3.5', active ? 'text-brand-600' : 'text-slate-300')} />
       </button>

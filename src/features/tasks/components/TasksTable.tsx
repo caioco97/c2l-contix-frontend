@@ -36,7 +36,6 @@ export function TasksTable({ items, showCompany }: Props) {
           return (
             <Tr
               key={t.id}
-              className="cursor-pointer"
               onClick={() => navigate(href)}
               onKeyDown={(e) => e.key === 'Enter' && navigate(href)}
               tabIndex={0}
