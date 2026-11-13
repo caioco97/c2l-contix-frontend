@@ -48,6 +48,10 @@ export const router = createBrowserRouter([
             lazy: () => import('@/features/cnd/CndPage').then((m) => ({ Component: m.CndPage })),
           },
           {
+            // Portal do Cliente: só o usuário do cliente. O escritório atende pelo menu Atendimento.
+            element: <RequireAuth roles={['Client']} />,
+            children: [
+          {
             path: 'portal',
             lazy: () => import('@/features/requests/pages/PortalLayout').then((m) => ({ Component: m.PortalLayout })),
             children: [
@@ -91,6 +95,8 @@ export const router = createBrowserRouter([
                     Component: () => <m.ComingSoonPage title="Relatórios" />,
                   })),
               },
+            ],
+          },
             ],
           },
           {
