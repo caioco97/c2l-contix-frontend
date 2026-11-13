@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { GuestOnly, RequireAuth } from '@/features/auth/components/RequireAuth'
 import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage'
@@ -48,6 +48,15 @@ export const router = createBrowserRouter([
             lazy: () => import('@/features/cnd/CndPage').then((m) => ({ Component: m.CndPage })),
           },
           {
+            element: <RequireModule module="NFe" />,
+            children: [
+              {
+                path: 'nfe',
+                lazy: () => import('@/features/nfe/NfePage').then((m) => ({ Component: m.NfePage })),
+              },
+            ],
+          },
+          {
             // Portal do Cliente: só o usuário do cliente. O escritório atende pelo menu Atendimento.
             element: <RequireAuth roles={['Client']} />,
             children: [
@@ -85,11 +94,9 @@ export const router = createBrowserRouter([
                 element: <RequireModule module="NFe" />,
                 children: [
               {
+                // Endereço antigo do portal: a tela de NF-e agora fica em /nfe.
                 path: 'nfe',
-                lazy: () =>
-                  import('@/features/requests/pages/ComingSoonPage').then((m) => ({
-                    Component: () => <m.ComingSoonPage title="Manifestação de NF-e" />,
-                  })),
+                element: <Navigate to="/nfe" replace />,
               },
                 ],
               },

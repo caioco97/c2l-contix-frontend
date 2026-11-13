@@ -18,6 +18,7 @@ import { CndTab, DocumentsTab, HistoryTab, RequestsTab } from '../components/Com
 import { regimeLabel, statusOf } from '../meta'
 import { CompanyTasksTab } from '@/features/tasks/components/CompanyTasksTab'
 import { CompanyBrandingTab } from '../branding/CompanyBrandingTab'
+import { SefazIntegrationCard } from '@/features/nfe/components/SefazIntegrationCard'
 import { CompanyLogo } from '../branding/CompanyLogo'
 
 const TABS = [
@@ -29,6 +30,7 @@ const TABS = [
   'solicitacoes',
   'tarefas',
   'cnd',
+  'nfe',
   'historico',
 ] as const
 type Tab = (typeof TABS)[number]
@@ -159,6 +161,7 @@ export function CompanyDetailPage() {
           { value: 'solicitacoes', label: 'Solicitações', count: p?.openRequests },
           { value: 'tarefas', label: 'Tarefas', count: p?.openTasks },
           { value: 'cnd', label: 'Certidões', count: p ? p.expiredCnds + p.expiringCnds : undefined },
+          { value: 'nfe', label: 'NF-e' },
           { value: 'historico', label: 'Histórico' },
         ]}
       />
@@ -182,6 +185,16 @@ export function CompanyDetailPage() {
       {tab === 'solicitacoes' && <RequestsTab companyId={companyId} />}
       {tab === 'tarefas' && <CompanyTasksTab companyId={companyId} />}
       {tab === 'cnd' && <CndTab companyId={companyId} onManage={() => openAs('/certidoes')} />}
+      {tab === 'nfe' && (
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button variant="secondary" onClick={() => openAs('/nfe')}>
+              Ver notas fiscais
+            </Button>
+          </div>
+          <SefazIntegrationCard companyId={companyId} />
+        </div>
+      )}
       {tab === 'historico' && <HistoryTab companyId={companyId} />}
 
       <CompanyFormModal
