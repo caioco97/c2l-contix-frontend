@@ -3,6 +3,7 @@ import { env } from '@/config/env'
 import { fetchFile } from '@/lib/download'
 import { mockDelay, mockError } from '@/lib/mock'
 import { mockStore } from '@/mocks/store'
+import { htmlToText } from '@/lib/richText'
 import type { PagedResult } from '@/types/api'
 import type { NewsDetail, NewsInput, NewsItem, NewsReach, NewsStatus, OfficeNews, OfficeNewsDetail } from '@/types/domain'
 import type {
@@ -170,7 +171,7 @@ export const officeNewsApi = {
         .sort((a, b) => b.publishAt.localeCompare(a.publishAt))
         .map<OfficeNews>((n) => ({
           ...n,
-          summary: n.summary ?? n.content.slice(0, 200),
+          summary: n.summary ?? htmlToText(n.content).slice(0, 200),
           attachmentCount: n.attachments.length,
           authorName: 'Colaborador Demo',
           recipients: n.audience === 'EmpresasSelecionadas' ? n.companies.length : 2,

@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Download, Paperclip } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { formatBytes } from '@/lib/format'
+import { toSafeHtml } from '@/lib/richText'
 import type { NewsAttachment } from '@/types/domain'
 
 interface Props {
@@ -11,19 +13,14 @@ interface Props {
   downloadingId?: string | null
 }
 
-/** Corpo da notícia: imagem de capa, parágrafos (texto puro) e anexos. */
+/** Corpo da notícia: imagem de capa, conteúdo rico (HTML sanitizado; texto antigo vira parágrafos) e anexos. */
 export function NewsContent({ content, imageUrl, attachments, onDownload, downloadingId }: Props) {
-  const paragraphs = content.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
+  const html = useMemo(() => toSafeHtml(content), [content])
   return (
     <div className="space-y-4">
       {imageUrl && <img src={imageUrl} alt="" className="max-h-64 w-full rounded-lg object-cover" />}
-      <div className="space-y-3 text-sm leading-relaxed text-slate-700">
-        {paragraphs.map((p, i) => (
-          <p key={i} className="whitespace-pre-line">
-            {p}
-          </p>
-        ))}
-      </div>
+      {/* O HTML é sanitizado no backend e de novo aqui (DOMPurify) antes de ir para a página. */}
+      <div className="rich-content" dangerouslySetInnerHTML={{ __html: html }} />
       {attachments.length > 0 && (
         <div className="space-y-2">
           <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
