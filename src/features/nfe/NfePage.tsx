@@ -217,7 +217,13 @@ function NotesList({ companyId, isOffice }: { companyId: string; isOffice: boole
             {selected.size} nota{selected.size === 1 ? '' : 's'} selecionada{selected.size === 1 ? '' : 's'}
           </span>
           <div className="ml-auto flex flex-wrap gap-2">
-            <Button size="sm" variant="secondary" loading={batch.isPending && batch.variables === 'Xml'} onClick={() => batch.mutate('Xml')}>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={selected.size > 500}
+              loading={batch.isPending && batch.variables === 'Xml'}
+              onClick={() => batch.mutate('Xml')}
+            >
               <FileArchive className="h-4 w-4" /> XMLs (.zip)
             </Button>
             <Button
