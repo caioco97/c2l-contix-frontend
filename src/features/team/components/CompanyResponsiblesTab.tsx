@@ -9,6 +9,7 @@ import { teamApi, teamKeys } from '../api'
 /**
  * Responsável de cada departamento pela empresa. Solicitações novas do cliente vão direto para ele
  * (e só ele é avisado); sem responsável, toda a equipe recebe o aviso.
+ * Monte com `key={companyId}` para o rascunho não passar de uma empresa para outra.
  */
 export function CompanyResponsiblesTab({ companyId }: { companyId: string }) {
   const toast = useToast()
