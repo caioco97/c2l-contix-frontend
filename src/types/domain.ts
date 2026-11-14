@@ -535,6 +535,11 @@ export interface Task {
   attachments: number
   createdAt: string
   updatedAt: string
+  /** Competência (yyyy-MM-01) das tarefas geradas por obrigação recorrente. */
+  period: string | null
+  obligationId: string | null
+  /** Solicitação do cliente que originou a tarefa. */
+  requestId: string | null
 }
 
 export interface TaskEvent {
@@ -554,6 +559,10 @@ export interface TaskDetail extends Task {
   completedAt: string | null
   allowedTransitions: TaskStatus[]
   history: TaskEvent[]
+  request: { id: string; number: number; subject: string } | null
+  obligationTitle: string | null
+  /** Arquivos entregues ao cliente na conclusão (viram documentos da empresa). */
+  deliveredDocuments: { id: string; name: string; folderId: string; dueDate: string | null }[]
 }
 
 export interface TaskInput {
@@ -563,6 +572,17 @@ export interface TaskInput {
   assigneeId: string
   internalDueDate: string
   legalDueDate: string | null
+  /** Só na criação: solicitação do cliente que originou a tarefa. */
+  requestId?: string | null
+}
+
+/** Conclusão com entrega: os arquivos são publicados na pasta da empresa e o cliente é avisado. */
+export interface TaskCompletion {
+  message: string
+  folderId: string | null
+  period: string | null
+  dueDate: string | null
+  files: File[]
 }
 
 /* ---------- Ficha do empregado ---------- */

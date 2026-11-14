@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useFieldArray, useFormContext, type FieldPath } from 'react-hook-form'
 import { Link } from 'react-router-dom'
-import { Plus, Trash2 } from 'lucide-react'
+import { FileSpreadsheet, Plus, Trash2 } from 'lucide-react'
 import { Button, Checkbox, FormField, Input, MaskedInput, Select, UfSelect, type MaskKind } from '@/components/ui'
 import { useActiveCompany } from '@/features/companies/ActiveCompanyContext'
 import { EmployeeSelect } from '@/features/employees/components/EmployeeSelect'
@@ -8,6 +9,7 @@ import { useCepLookup } from '@/lib/cep'
 import type { ServiceRequestTypeCode } from '@/types/domain'
 import { optionsOf } from '../meta'
 import { emptyRubrica, type RequestFormValues } from './schema'
+import { ImportRubricasModal } from './ImportRubricasModal'
 
 type Name = FieldPath<RequestFormValues>
 
@@ -259,8 +261,11 @@ const RUBRICAS = ['Horas extras 50%', 'Horas extras 100%', 'Adicional noturno', 
 
 function RubricasFields() {
   const { control } = useFormContext<RequestFormValues>()
-  const { fields, append, remove } = useFieldArray({ control, name: 'data.lancamentos' })
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'data.lancamentos' })
   const listError = useFieldError('data.lancamentos')
+  const { company } = useActiveCompany()
+  const [importing, setImporting] = useState(false)
+  const str = (n: number | null) => (n === null ? '' : String(n))
   return (
     <Section title="Lançamentos da folha">
       <p className="text-xs text-slate-500">
@@ -298,11 +303,29 @@ function RubricasFields() {
           </div>
         ))}
         {listError && <p className="text-xs text-red-600">{listError}</p>}
-        <Button variant="secondary" size="sm" onClick={() => append(emptyRubrica())}>
-          <Plus className="h-4 w-4" />
-          Adicionar lançamento
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => append(emptyRubrica())}>
+            <Plus className="h-4 w-4" />
+            Adicionar lançamento
+          </Button>
+          {company && (
+            <Button variant="ghost" size="sm" onClick={() => setImporting(true)}>
+              <FileSpreadsheet className="h-4 w-4" />
+              Importar planilha
+            </Button>
+          )}
+        </div>
       </div>
+      {company && (
+        <ImportRubricasModal
+          companyId={company.id}
+          open={importing}
+          onClose={() => setImporting(false)}
+          onUse={(rows) =>
+            replace(rows.map((r) => ({ empregadoId: r.employeeId, rubrica: r.rubrica, quantidade: str(r.quantity), valor: str(r.value) })))
+          }
+        />
+      )}
     </Section>
   )
 }

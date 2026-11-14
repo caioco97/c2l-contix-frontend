@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { BellRing, Building2, ChevronDown, CircleHelp, ClipboardCheck, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ReceiptText, ShieldCheck, UserRound, X } from 'lucide-react'
+import { BarChart3, BellRing, Building2, ChevronDown, CircleHelp, ClipboardCheck, Gauge, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ReceiptText, ShieldCheck, UserRound, Users, X } from 'lucide-react'
 import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
@@ -27,6 +27,7 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Início', icon: Home, end: true, audience: 'client' },
+  { to: '/painel', label: 'Painel', icon: Gauge, audience: 'office' },
   { to: '/empresas', label: 'Empresas', icon: Building2, audience: 'office' },
   { to: '/documentos', label: 'Documentos', icon: FolderOpen, modules: ['Documentos'] },
   { to: '/atendimento', label: 'Atendimento', icon: Headset, audience: 'office' },
@@ -129,6 +130,28 @@ export function AppHeader() {
                   <MenuItem icon={<UserRound className="h-4 w-4" />} onClick={close}>
                     Meu perfil
                   </MenuItem>
+                  {audience === 'office' && (
+                    <>
+                      <MenuItem
+                        icon={<Users className="h-4 w-4" />}
+                        onClick={() => {
+                          close()
+                          navigate('/equipe')
+                        }}
+                      >
+                        Equipe
+                      </MenuItem>
+                      <MenuItem
+                        icon={<BarChart3 className="h-4 w-4" />}
+                        onClick={() => {
+                          close()
+                          navigate('/relatorios')
+                        }}
+                      >
+                        Relatórios
+                      </MenuItem>
+                    </>
+                  )}
                   <MenuItem
                     icon={<BellRing className="h-4 w-4" />}
                     onClick={() => {

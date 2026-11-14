@@ -1,4 +1,5 @@
 import { api } from '@/lib/api'
+import { fetchFile } from '@/lib/download'
 import { env } from '@/config/env'
 import { mockDelay, mockError } from '@/lib/mock'
 import { mockRequestTypes, mockUser } from '@/mocks/data'
@@ -174,6 +175,12 @@ function multipart(fields: Record<string, string | undefined>, files: File[]) {
 
 const MULTIPART = { headers: { 'Content-Type': 'multipart/form-data' } }
 
+export interface RubricasImport {
+  total: number
+  valid: { employeeId: string; employeeName: string | null; rubrica: string; quantity: number | null; value: number | null }[]
+  errors: { line: number; field: string; message: string }[]
+}
+
 export const requestsApi = {
   async types(): Promise<ServiceRequestType[]> {
     if (env.useMocks) return mockDelay(mockRequestTypes, 200)
@@ -256,11 +263,41 @@ export const requestsApi = {
     return data
   },
 
+  /** Planilha modelo de rubricas, já com os empregados ativos da empresa. */
+  async rubricasTemplate(companyId: string, format: 'Xlsx' | 'Csv') {
+    const fallback = `modelo-rubricas.${format.toLowerCase()}`
+    if (env.useMocks) return mockDelay({ blob: new Blob(['CPF;Matrícula;Empregado;Rubrica;Quantidade;Valor\r\n']), fileName: fallback }, 200)
+    return fetchFile(`/empresas/${companyId}/rubricas/modelo?formato=${format}`, fallback)
+  },
+
+  /** Lê a planilha preenchida e devolve os lançamentos válidos e os erros por linha (nada é gravado). */
+  async importRubricas(companyId: string, file: File): Promise<RubricasImport> {
+    if (env.useMocks) return mockDelay({ total: 0, valid: [], errors: [] }, 300)
+    const form = new FormData()
+    form.append('arquivo', file)
+    const { data } = await api.post<{
+      totalLinhas: number
+      validos: { empregadoId: string; empregado: string | null; rubrica: string; quantidade: number | null; valor: number | null }[]
+      erros: { linha: number; campo: string; mensagem: string }[]
+    }>(`/empresas/${companyId}/rubricas/importacao`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+    return {
+      total: data.totalLinhas,
+      valid: data.validos.map((v) => ({
+        employeeId: v.empregadoId,
+        employeeName: v.empregado,
+        rubrica: v.rubrica,
+        quantity: v.quantidade,
+        value: v.valor,
+      })),
+      errors: data.erros.map((e) => ({ line: e.linha, field: e.campo, message: e.mensagem })),
+    }
+  },
+
   /** Usuários do escritório que podem ser responsáveis. */
   async officeUsers(): Promise<OfficeUser[]> {
     if (env.useMocks) return mockDelay([{ id: mockUser.id, name: mockUser.name }], 150)
     const { data } = await api.get<PagedDto<UsuarioResumoDto>>('/usuarios', {
-      params: { ativo: true, pageSize: 100, page: 1 },
+      params: { ativo: true, escritorio: true, pageSize: 100, page: 1 },
     })
     return data.items.filter((u) => u.perfil !== 'Cliente').map((u) => ({ id: u.id, name: u.nome }))
   },

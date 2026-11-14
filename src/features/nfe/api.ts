@@ -290,6 +290,28 @@ export const nfeApi = {
     return fetchFile(`/empresas/${companyId}/notas-fiscais/${n.id}/xml`, fallback)
   },
 
+  /** DANFE em PDF, gerado do XML completo (só depois da ciência ou da importação). */
+  async downloadDanfe(companyId: string, n: Nfe) {
+    const fallback = `DANFE-${n.accessKey}.pdf`
+    if (env.useMocks) return mockDelay({ blob: new Blob(['DANFE de demonstração'], { type: 'application/pdf' }), fileName: fallback }, 300)
+    return fetchFile(`/empresas/${companyId}/notas-fiscais/${n.id}/danfe`, fallback)
+  },
+
+  /** XML e/ou DANFE das notas selecionadas em um .zip (até 500 notas). */
+  async downloadBatch(companyId: string, ids: string[], content: 'Xml' | 'Danfe' | 'XmlEDanfe') {
+    const fallback = 'notas-fiscais.zip'
+    if (env.useMocks) return mockDelay({ blob: new Blob(['zip de demonstração']), fileName: fallback }, 400)
+    const res = await api.post<Blob>(
+      `/empresas/${companyId}/notas-fiscais/download`,
+      { notaIds: ids, conteudo: content },
+      { responseType: 'blob' },
+    )
+    const disposition = String(res.headers['content-disposition'] ?? '')
+    const star = /filename\*=UTF-8''([^;]+)/i.exec(disposition)
+    const plain = /filename="?([^";]+)"?/i.exec(disposition)
+    return { blob: res.data, fileName: star ? decodeURIComponent(star[1]) : plain ? plain[1] : fallback }
+  },
+
   async importXml(companyId: string, files: File[]): Promise<ImportResult> {
     if (env.useMocks)
       return mockDelay({

@@ -101,7 +101,7 @@ function toFolder(dto: PastaDto): DocumentFolder {
   }
 }
 
-function folderPaths(folders: DocumentFolder[], prefix = '', acc = new Map<string, string>()) {
+export function folderPaths(folders: DocumentFolder[], prefix = '', acc = new Map<string, string>()) {
   for (const f of folders) {
     const path = prefix ? `${prefix}/${f.name}` : f.name
     acc.set(f.id, path)

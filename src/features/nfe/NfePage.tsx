@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Download, FileCheck2, FileUp, Search, Stamp } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, FileArchive, FileCheck2, FileText, FileUp, Search, Stamp, X } from 'lucide-react'
 import {
   Badge,
   Button,
   Card,
+  Checkbox,
   EmptyState,
   Input,
   Select,
@@ -106,9 +107,41 @@ function NotesList({ companyId, isOffice }: { companyId: string; isOffice: boole
     onSuccess: saveFile,
     onError: (e) => toast.error(getErrorMessage(e, 'Não foi possível baixar o XML.')),
   })
+  const danfe = useMutation({
+    mutationFn: (n: Nfe) => nfeApi.downloadDanfe(companyId, n),
+    onSuccess: saveFile,
+    onError: (e) => toast.error(getErrorMessage(e, 'Não foi possível gerar o DANFE.')),
+  })
+  // Seleção para o download em lote (vale entre páginas, até 500 notas).
+  const [selected, setSelected] = useState<Map<string, Nfe>>(new Map())
+  const toggle = (n: Nfe) =>
+    setSelected((cur) => {
+      const next = new Map(cur)
+      if (next.has(n.id)) next.delete(n.id)
+      else next.set(n.id, n)
+      return next
+    })
+  const batch = useMutation({
+    mutationFn: (content: 'Xml' | 'Danfe' | 'XmlEDanfe') => nfeApi.downloadBatch(companyId, [...selected.keys()], content),
+    onSuccess: (file) => {
+      saveFile(file)
+      setSelected(new Map())
+    },
+    onError: (e) => toast.error(getErrorMessage(e, 'Não foi possível montar o arquivo.')),
+  })
 
   const pages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE))
   const items = data?.items ?? []
+  const selectable = items.filter((n) => n.hasXml)
+  const allOnPage = selectable.length > 0 && selectable.every((n) => selected.has(n.id))
+  const togglePage = () =>
+    setSelected((cur) => {
+      const next = new Map(cur)
+      if (allOnPage) selectable.forEach((n) => next.delete(n.id))
+      else selectable.forEach((n) => next.set(n.id, n))
+      return next
+    })
+  const selectedWithFullXml = [...selected.values()].filter((n) => n.fullXml).length
 
   return (
     <div className="space-y-4">
@@ -178,6 +211,33 @@ function NotesList({ companyId, isOffice }: { companyId: string; isOffice: boole
         </div>
       </Card>
 
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm">
+          <span className="font-medium text-brand-800">
+            {selected.size} nota{selected.size === 1 ? '' : 's'} selecionada{selected.size === 1 ? '' : 's'}
+          </span>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" loading={batch.isPending && batch.variables === 'Xml'} onClick={() => batch.mutate('Xml')}>
+              <FileArchive className="h-4 w-4" /> XMLs (.zip)
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={selectedWithFullXml === 0 || selected.size > 500}
+              title={selectedWithFullXml === 0 ? 'O DANFE precisa do XML completo (depois da ciência).' : undefined}
+              loading={batch.isPending && batch.variables !== 'Xml'}
+              onClick={() => batch.mutate('XmlEDanfe')}
+            >
+              <FileText className="h-4 w-4" /> XML + DANFE (.zip)
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Map())} aria-label="Limpar seleção">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          {selected.size > 500 && <p className="w-full text-xs text-red-600">Selecione no máximo 500 notas por vez.</p>}
+        </div>
+      )}
+
       <Card className={cn('overflow-hidden', isFetching && !isLoading && 'opacity-70')}>
         {isLoading ? (
           <div className="space-y-2 p-4">
@@ -200,6 +260,14 @@ function NotesList({ companyId, isOffice }: { companyId: string; isOffice: boole
           <Table>
             <THead>
               <tr>
+                <Th className="w-10">
+                  <Checkbox
+                    aria-label="Selecionar as notas da página"
+                    checked={allOnPage}
+                    disabled={selectable.length === 0}
+                    onChange={togglePage}
+                  />
+                </Th>
                 <Th>Emissão</Th>
                 <Th>Emitente</Th>
                 <Th>Número</Th>
@@ -211,7 +279,15 @@ function NotesList({ companyId, isOffice }: { companyId: string; isOffice: boole
             </THead>
             <TBody>
               {items.map((n) => (
-                <Tr key={n.id}>
+                <Tr key={n.id} className={selected.has(n.id) ? 'bg-brand-50/50' : undefined}>
+                  <Td>
+                    <Checkbox
+                      aria-label={`Selecionar a nota ${n.number}`}
+                      checked={selected.has(n.id)}
+                      disabled={!n.hasXml}
+                      onChange={() => toggle(n)}
+                    />
+                  </Td>
                   <Td className="whitespace-nowrap">{formatDate(n.issuedAt)}</Td>
                   <Td>
                     <span className="block font-medium text-ink">{n.issuerName}</span>
@@ -246,6 +322,18 @@ function NotesList({ companyId, isOffice }: { companyId: string; isOffice: boole
                       {n.status !== 'Cancelada' && !isFinal(n.manifestation) && (
                         <Button size="sm" onClick={() => setManifesting(n)}>
                           <Stamp className="h-4 w-4" /> Manifestar
+                        </Button>
+                      )}
+                      {n.fullXml && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="DANFE (PDF)"
+                          aria-label="Baixar DANFE"
+                          loading={danfe.isPending && danfe.variables?.id === n.id}
+                          onClick={() => danfe.mutate(n)}
+                        >
+                          {!(danfe.isPending && danfe.variables?.id === n.id) && <FileText className="h-4 w-4" />}
                         </Button>
                       )}
                       {n.hasXml && (

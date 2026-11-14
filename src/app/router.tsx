@@ -88,6 +88,10 @@ export const router = createBrowserRouter([
                 path: 'solicitacoes/nova/:typeCode',
                 lazy: () => import('@/features/requests/pages/NewRequestPage').then((m) => ({ Component: m.NewRequestPage })),
               },
+              {
+                path: 'relatorios',
+                lazy: () => import('@/features/reports/PortalReportsPage').then((m) => ({ Component: m.PortalReportsPage })),
+              },
                 ],
               },
               {
@@ -100,13 +104,7 @@ export const router = createBrowserRouter([
               },
                 ],
               },
-              {
-                path: 'relatorios',
-                lazy: () =>
-                  import('@/features/requests/pages/ComingSoonPage').then((m) => ({
-                    Component: () => <m.ComingSoonPage title="Relatórios" />,
-                  })),
-              },
+
             ],
           },
             ],
@@ -114,6 +112,22 @@ export const router = createBrowserRouter([
           {
             element: <RequireAuth roles={['Admin', 'Collaborator']} />,
             children: [
+              {
+                path: 'painel',
+                lazy: () => import('@/features/reports/DashboardPage').then((m) => ({ Component: m.DashboardPage })),
+              },
+              {
+                path: 'relatorios',
+                lazy: () => import('@/features/reports/ReportsPage').then((m) => ({ Component: m.ReportsPage })),
+              },
+              {
+                path: 'equipe',
+                lazy: () => import('@/features/team/pages/TeamPage').then((m) => ({ Component: m.TeamPage })),
+              },
+              {
+                path: 'tarefas/obrigacoes',
+                lazy: () => import('@/features/obligations/ObligationsPage').then((m) => ({ Component: m.ObligationsPage })),
+              },
               {
                 path: 'empresas',
                 lazy: () => import('@/features/companies/pages/CompaniesPage').then((m) => ({ Component: m.CompaniesPage })),

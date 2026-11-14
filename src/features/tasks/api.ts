@@ -4,7 +4,7 @@ import { mockDelay, mockError } from '@/lib/mock'
 import { mockUser } from '@/mocks/data'
 import { mockStore } from '@/mocks/store'
 import type { PagedResult } from '@/types/api'
-import type { Department, Task, TaskDetail, TaskEvent, TaskInput, TaskStatus } from '@/types/domain'
+import type { Department, Task, TaskCompletion, TaskDetail, TaskEvent, TaskInput, TaskStatus } from '@/types/domain'
 import type { InteracaoTarefaDto, PagedDto, StatusTarefaDto, TarefaDto, TarefaResumoDto } from '@/types/dto'
 
 /* ---------- Conversão DTO (API) <-> domínio (telas) ---------- */
@@ -41,6 +41,9 @@ function toTask(dto: TarefaResumoDto): Task {
     attachments: dto.anexos,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt ?? dto.createdAt,
+    period: dto.competencia ?? null,
+    obligationId: dto.obrigacaoId ?? null,
+    requestId: dto.solicitacaoId ?? null,
   }
 }
 
@@ -70,7 +73,16 @@ function toDetail(dto: TarefaDto): TaskDetail {
       ...dto,
       comentarios: history.filter((e) => e.kind === 'comment').length,
       anexos: history.reduce((n, e) => n + e.attachments.length, 0),
+      solicitacaoId: dto.solicitacao?.id ?? null,
     }),
+    request: dto.solicitacao ? { id: dto.solicitacao.id, number: dto.solicitacao.numero, subject: dto.solicitacao.assunto } : null,
+    obligationTitle: dto.obrigacaoTitulo ?? null,
+    deliveredDocuments: (dto.documentosEntregues ?? []).map((d) => ({
+      id: d.id,
+      name: d.nome,
+      folderId: d.pastaId,
+      dueDate: d.dataVencimento,
+    })),
     description: dto.descricao,
     createdByName: dto.criadoPorNome,
     completedAt: dto.concluidaEm,
@@ -86,6 +98,7 @@ const toBody = (input: TaskInput) => ({
   responsavelId: input.assigneeId,
   prazoInterno: input.internalDueDate,
   prazoLegal: input.legalDueDate ?? undefined,
+  solicitacaoId: input.requestId ?? undefined,
 })
 
 /* ---------- Consultas ---------- */
@@ -99,6 +112,9 @@ export interface TaskFilters {
   overdue?: boolean
   /** Prazo interno até esta data (yyyy-MM-dd). */
   dueUntil?: string
+  /** Prazo interno a partir desta data (yyyy-MM-dd). */
+  dueFrom?: string
+  obligationId?: string
   companyId?: string
   search?: string
   sortBy?: 'prazo' | 'prazoLegal' | 'numero' | 'status' | 'createdAt'
@@ -115,6 +131,8 @@ function toParams(f: TaskFilters) {
     responsavelId: f.assigneeId,
     atrasadas: f.overdue || undefined,
     prazoAte: f.dueUntil,
+    prazoDe: f.dueFrom,
+    obrigacaoId: f.obligationId,
     empresaId: f.companyId,
     busca: f.search?.trim() || undefined,
     orderBy: f.sortBy,
@@ -129,6 +147,7 @@ export const taskKeys = {
   list: (f: TaskFilters) => ['tasks', 'list', f] as const,
   ofCompany: (companyId: string, f: TaskFilters) => ['tasks', 'company', companyId, f] as const,
   detail: (companyId: string, id: string) => ['tasks', 'detail', companyId, id] as const,
+  ofRequest: (companyId: string, requestId: string) => ['tasks', 'request', companyId, requestId] as const,
 }
 
 const MULTIPART = { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -192,6 +211,28 @@ export const tasksApi = {
       status: STATUS_TO_API[status],
       mensagem: message || undefined,
     })
+    return toDetail(data)
+  },
+
+  /** Tarefas abertas a partir de uma solicitação do cliente. */
+  async listOfRequest(companyId: string, requestId: string): Promise<Task[]> {
+    if (env.useMocks) return mockDelay(mockStore.tasks(companyId).filter((t) => t.requestId === requestId), 200)
+    const { data } = await api.get<TarefaResumoDto[]>(`/empresas/${companyId}/solicitacoes/${requestId}/tarefas`)
+    return data.map(toTask)
+  },
+
+  /** Conclui a tarefa; com arquivos, publica-os na pasta da empresa como entrega ao cliente. */
+  async complete(companyId: string, id: string, c: TaskCompletion): Promise<TaskDetail> {
+    if (env.useMocks) return mockDelay(mockTasks.changeStatus(companyId, id, 'Done', c.message), 500)
+    const form = new FormData()
+    if (c.message.trim()) form.append('mensagem', c.message.trim())
+    if (c.files.length > 0) {
+      if (c.folderId) form.append('pastaId', c.folderId)
+      if (c.period) form.append('competencia', c.period)
+      if (c.dueDate) form.append('dataVencimento', c.dueDate)
+    }
+    c.files.forEach((f) => form.append('arquivos', f))
+    const { data } = await api.post<TarefaDto>(`/empresas/${companyId}/tarefas/${id}/conclusao`, form, MULTIPART)
     return toDetail(data)
   },
 
@@ -280,6 +321,12 @@ const mockTasks = {
       updatedAt: now,
       createdByName: mockUser.name,
       completedAt: null,
+      period: null,
+      obligationId: null,
+      requestId: input.requestId ?? null,
+      request: null,
+      obligationTitle: null,
+      deliveredDocuments: [],
       allowedTransitions: [],
       history: [mockTasks.event('created', { toStatus: 'Pending', message: input.description, attachments: mockTasks.attachments(files) })],
     }

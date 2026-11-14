@@ -347,6 +347,12 @@ export function mockTasks(): TaskDetail[] {
     createdByName: 'Mariana Souza',
     completedAt: null,
     attachments: 0,
+    period: null,
+    obligationId: null,
+    requestId: null,
+    request: null,
+    obligationTitle: null,
+    deliveredDocuments: [],
   }
   const created = (id: string, offset: number, message: string | null): TaskDetail['history'][number] => ({
     id: `${id}-e1`,
