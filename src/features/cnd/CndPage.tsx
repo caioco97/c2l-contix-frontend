@@ -136,7 +136,7 @@ function CompanyCnds({
 }) {
   const [history, setHistory] = useState(false)
   const [removing, setRemoving] = useState<Cnd | null>(null)
-  const { data = [], isLoading } = useQuery({
+  const { data = [], isLoading, isError, error, refetch } = useQuery({
     queryKey: cndKeys.list(companyId, history),
     queryFn: () => cndApi.list(companyId, history),
   })
@@ -168,6 +168,18 @@ function CompanyCnds({
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
         </div>
+      ) : isError ? (
+        <EmptyState
+          className="m-4"
+          icon={<AlertTriangle className="h-8 w-8" />}
+          title="Não foi possível carregar as certidões"
+          description={getErrorMessage(error, 'Tente novamente em instantes.')}
+          action={
+            <Button variant="secondary" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4" /> Tentar novamente
+            </Button>
+          }
+        />
       ) : data.length === 0 ? (
         <EmptyState
           className="m-4"
