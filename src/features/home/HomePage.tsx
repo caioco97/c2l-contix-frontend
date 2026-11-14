@@ -12,8 +12,8 @@ export function HomePage() {
   const { can } = useModuleAccess()
   const documents = can('Documentos')
 
-  // O Início é o painel do cliente. O escritório entra direto no controle das empresas.
-  if (user && user.role !== 'Client') return <Navigate to="/empresas" replace />
+  // O Início é o painel do cliente. O escritório entra no painel do escritório.
+  if (user && user.role !== 'Client') return <Navigate to="/painel" replace />
 
   return (
     <>

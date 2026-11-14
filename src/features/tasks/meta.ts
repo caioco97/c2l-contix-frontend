@@ -15,3 +15,11 @@ export const TASK_STATUS_OPTIONS = (Object.keys(taskStatusMeta) as TaskStatus[])
   value: s,
   label: taskStatusMeta[s].label,
 }))
+
+/** Mudanças de status aceitas pela API (o quadro só permite soltar onde a transição existe). */
+export const TASK_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
+  Pending: ['InProgress', 'Done', 'Canceled'],
+  InProgress: ['Pending', 'Done', 'Canceled'],
+  Done: ['InProgress'],
+  Canceled: ['Pending'],
+}

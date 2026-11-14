@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, ArrowRight, CircleDot, Download, MessageSquare, Pencil, Send, SquarePen } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { AlertTriangle, ArrowRight, CircleDot, Download, FileCheck2, MessageSquare, Pencil, Send, SquarePen } from 'lucide-react'
 import { Badge, Button, Card, CardBody, EmptyState, FormField, Modal, Skeleton, Textarea, useToast } from '@/components/ui'
 import { saveBlob } from '@/features/documents/api'
 import { AttachmentPicker } from '@/features/requests/components/AttachmentPicker'
@@ -12,6 +13,7 @@ import type { TaskDetail, TaskEvent, TaskInput, TaskStatus } from '@/types/domai
 import { taskKeys, tasksApi } from '../api'
 import { taskStatusMeta } from '../meta'
 import { TaskFormModal } from './TaskFormModal'
+import { CompleteTaskModal } from './CompleteTaskModal'
 
 interface Props {
   companyId: string
@@ -77,6 +79,7 @@ export function TaskDetailView({ companyId, taskId }: Props) {
               </CardBody>
             </Card>
           )}
+          <Delivered task={t} />
           <Timeline task={t} companyId={companyId} />
           <CommentBox companyId={companyId} taskId={t.id} />
         </div>
@@ -118,6 +121,21 @@ function Summary({ task: t }: { task: TaskDetail }) {
   const rows: { label: string; value: React.ReactNode }[] = [
     { label: 'Empresa', value: t.companyName },
     { label: 'Departamento', value: departmentLabels[t.department] },
+    ...(t.request
+      ? [
+          {
+            label: 'Solicitação do cliente',
+            value: (
+              <Link to={`/atendimento/${t.companyId}/${t.request.id}`} className="text-brand-700 hover:underline">
+                #{t.request.number} · {t.request.subject}
+              </Link>
+            ),
+          },
+        ]
+      : []),
+    ...(t.obligationTitle
+      ? [{ label: 'Obrigação recorrente', value: `${t.obligationTitle}${t.period ? ` · ${formatDate(t.period, 'MM/yyyy')}` : ''}` }]
+      : []),
     { label: 'Responsável', value: t.assigneeName },
     { label: 'Prazo interno', value: date(t.internalDueDate, t.isOverdue, 'atrasada') },
     { label: 'Prazo legal', value: date(t.legalDueDate, t.isLegalOverdue, 'vencido') },
@@ -260,8 +278,10 @@ function CommentBox({ companyId, taskId }: { companyId: string; taskId: string }
 
 function StatusActions({ task: t, companyId }: { task: TaskDetail; companyId: string }) {
   const toast = useToast()
+  const queryClient = useQueryClient()
   const update = useUpdateDetail(companyId, t.id)
   const [target, setTarget] = useState<TaskStatus | null>(null)
+  const [completing, setCompleting] = useState(false)
   const [message, setMessage] = useState('')
   const change = useMutation({
     mutationFn: (status: TaskStatus) => tasksApi.changeStatus(companyId, t.id, status, message.trim()),
@@ -287,7 +307,7 @@ function StatusActions({ task: t, companyId }: { task: TaskDetail; companyId: st
             key={s}
             className="w-full justify-center"
             variant={s === 'Done' ? 'primary' : 'secondary'}
-            onClick={() => setTarget(s)}
+            onClick={() => (s === 'Done' && !closed ? setCompleting(true) : setTarget(s))}
           >
             {label(s)}
           </Button>
@@ -317,6 +337,42 @@ function StatusActions({ task: t, companyId }: { task: TaskDetail; companyId: st
           <Textarea id="task-status-message" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
         </FormField>
       </Modal>
+      {completing && (
+      <CompleteTaskModal
+        task={t}
+        open
+        onClose={() => setCompleting(false)}
+        onDone={(detail) => {
+          update(detail)
+          queryClient.invalidateQueries({ queryKey: ['documents', companyId] })
+          setCompleting(false)
+        }}
+      />
+      )}
+    </Card>
+  )
+}
+
+/** Arquivos entregues ao cliente na conclusão da tarefa. */
+function Delivered({ task: t }: { task: TaskDetail }) {
+  if (t.deliveredDocuments.length === 0) return null
+  return (
+    <Card>
+      <CardBody>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <FileCheck2 className="h-4 w-4 text-emerald-600" /> Entregue ao cliente
+        </h2>
+        <ul className="divide-y divide-slate-100 text-sm">
+          {t.deliveredDocuments.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-3 py-2">
+              <Link to={`/empresas/${t.companyId}?aba=documentos`} className="truncate text-ink hover:text-brand-700">
+                {d.name}
+              </Link>
+              {d.dueDate && <span className="whitespace-nowrap text-xs text-slate-500">vence {formatDate(d.dueDate)}</span>}
+            </li>
+          ))}
+        </ul>
+      </CardBody>
     </Card>
   )
 }

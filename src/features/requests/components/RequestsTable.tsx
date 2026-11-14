@@ -64,13 +64,26 @@ export function RequestsTable({ items, office, hrefOf }: Props) {
   )
 }
 
-export function Pager({ page, total, pageSize, onPage }: { page: number; total: number; pageSize: number; onPage: (p: number) => void }) {
+export function Pager({
+  page,
+  total,
+  pageSize,
+  onPage,
+  noun = ['solicitação', 'solicitações'],
+}: {
+  page: number
+  total: number
+  pageSize: number
+  onPage: (p: number) => void
+  /** Singular e plural do que está sendo paginado. */
+  noun?: [string, string]
+}) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
   if (pages <= 1) return null
   return (
     <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2 text-sm text-slate-600">
       <span>
-        {total} solicitaç{total === 1 ? 'ão' : 'ões'} · página {page} de {pages}
+        {total} {total === 1 ? noun[0] : noun[1]} · página {page} de {pages}
       </span>
       <div className="flex gap-1">
         <Button variant="ghost" size="icon" aria-label="Página anterior" disabled={page <= 1} onClick={() => onPage(page - 1)}>

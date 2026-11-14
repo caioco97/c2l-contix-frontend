@@ -20,10 +20,12 @@ import { CompanyTasksTab } from '@/features/tasks/components/CompanyTasksTab'
 import { CompanyBrandingTab } from '../branding/CompanyBrandingTab'
 import { SefazIntegrationCard } from '@/features/nfe/components/SefazIntegrationCard'
 import { CompanyLogo } from '../branding/CompanyLogo'
+import { CompanyResponsiblesTab } from '@/features/team/components/CompanyResponsiblesTab'
 
 const TABS = [
   'dados',
   'usuarios',
+  'responsaveis',
   'visual',
   'empregados',
   'documentos',
@@ -155,6 +157,7 @@ export function CompanyDetailPage() {
         items={[
           { value: 'dados', label: 'Visão geral' },
           { value: 'usuarios', label: 'Usuários', count: p?.pendingInvites },
+          { value: 'responsaveis', label: 'Responsáveis' },
           { value: 'visual', label: 'Identidade visual' },
           { value: 'empregados', label: 'Empregados' },
           { value: 'documentos', label: 'Documentos', count: p?.receivedUnread },
@@ -177,6 +180,7 @@ export function CompanyDetailPage() {
           onInvitingChange={setInviting}
         />
       )}
+      {tab === 'responsaveis' && <CompanyResponsiblesTab companyId={companyId} />}
       {tab === 'visual' && <CompanyBrandingTab key={c.id} company={c} />}
       {tab === 'empregados' && (
         <EmployeesPanel companyId={companyId} editable requestHref={(id) => `/atendimento/${companyId}/${id}`} />

@@ -27,12 +27,17 @@ const schema = z
   })
 type FormValues = z.infer<typeof schema>
 
-function defaults(task: TaskDetail | null | undefined, companyId: string | undefined, userId: string | undefined): FormValues {
+function defaults(
+  task: TaskDetail | null | undefined,
+  companyId: string | undefined,
+  userId: string | undefined,
+  prefill?: Partial<TaskInput>,
+): FormValues {
   return {
     companyId: task?.companyId ?? companyId ?? '',
-    title: task?.title ?? '',
-    description: task?.description ?? '',
-    department: task?.department ?? ('' as FormValues['department']),
+    title: task?.title ?? prefill?.title ?? '',
+    description: task?.description ?? prefill?.description ?? '',
+    department: task?.department ?? prefill?.department ?? ('' as FormValues['department']),
     assigneeId: task?.assigneeId ?? userId ?? '',
     internalDueDate: task?.internalDueDate ?? '',
     legalDueDate: task?.legalDueDate ?? '',
@@ -45,11 +50,13 @@ interface Props {
   task?: TaskDetail | null
   /** Empresa fixa (aba Tarefas da empresa). Sem ela, o usuário escolhe. */
   companyId?: string
+  /** Valores iniciais de uma tarefa nova (ex.: criada a partir de uma solicitação, com `requestId`). */
+  prefill?: Partial<TaskInput>
   onClose: () => void
   onSubmit: (companyId: string, input: TaskInput, attachments: File[]) => Promise<void>
 }
 
-export function TaskFormModal({ open, task, companyId, onClose, onSubmit }: Props) {
+export function TaskFormModal({ open, task, companyId, prefill, onClose, onSubmit }: Props) {
   const { user } = useAuth()
   const [files, setFiles] = useState<File[]>([])
   const fixedCompany = !!task || !!companyId
@@ -61,11 +68,11 @@ export function TaskFormModal({ open, task, companyId, onClose, onSubmit }: Prop
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults(task, companyId, user?.id) })
+  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults(task, companyId, user?.id, prefill) })
 
   useEffect(() => {
-    if (open) reset(defaults(task, companyId, user?.id))
-  }, [open, task, companyId, user?.id, reset])
+    if (open) reset(defaults(task, companyId, user?.id, prefill))
+  }, [open, task, companyId, user?.id, prefill, reset])
 
   const submit = handleSubmit(async (v) => {
     await onSubmit(
@@ -77,6 +84,7 @@ export function TaskFormModal({ open, task, companyId, onClose, onSubmit }: Prop
         assigneeId: v.assigneeId,
         internalDueDate: v.internalDueDate,
         legalDueDate: v.legalDueDate || null,
+        requestId: task ? undefined : prefill?.requestId,
       },
       files,
     )

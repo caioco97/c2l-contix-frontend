@@ -22,6 +22,7 @@ import type { RequestEvent, ServiceRequestDetail, ServiceRequestStatus } from '@
 import { requestKeys, requestsApi } from '../api'
 import { dataLabels, departmentLabels, enumLabels, statusActions, statusMeta } from '../meta'
 import { AttachmentPicker } from './AttachmentPicker'
+import { RequestTasksPanel } from '@/features/tasks/components/RequestTasksPanel'
 
 interface Props {
   companyId: string
@@ -75,6 +76,7 @@ export function RequestDetail({ companyId, requestId }: Props) {
           <Summary request={r} isOffice={isOffice} />
           <StatusActions request={r} companyId={companyId} isOffice={isOffice} />
           {isOffice && <AssignPanel request={r} companyId={companyId} />}
+          {isOffice && <RequestTasksPanel request={r} companyId={companyId} />}
         </aside>
       </div>
     </div>

@@ -505,6 +505,9 @@ export interface TarefaResumoDto {
   anexos: number
   createdAt: string
   updatedAt: string | null
+  competencia: string | null
+  obrigacaoId: string | null
+  solicitacaoId: string | null
 }
 
 export interface AnexoTarefaDto {
@@ -535,6 +538,9 @@ export interface TarefaDto extends Omit<TarefaResumoDto, 'comentarios' | 'anexos
   concluidaEm: string | null
   transicoesPermitidas: StatusTarefaDto[]
   historico: InteracaoTarefaDto[]
+  solicitacao: { id: string; numero: number; assunto: string } | null
+  obrigacaoTitulo: string | null
+  documentosEntregues: { id: string; nome: string; pastaId: string; dataVencimento: string | null }[]
 }
 
 export interface OrigemFichaDto {
