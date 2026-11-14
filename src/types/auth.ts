@@ -13,6 +13,10 @@ export interface CurrentUser {
   email: string
   role: UserRole
   office: { id: string; name: string; logoUrl?: string | null }
+  /** Somente dígitos (DDD + número). */
+  phone?: string | null
+  /** Versão da foto de perfil; nula quando o usuário não tem foto. */
+  photoVersion?: string | null
 }
 
 export interface LoginRequest {

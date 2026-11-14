@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { BarChart3, BellRing, Building2, ChevronDown, CircleHelp, ClipboardCheck, Gauge, Headset, Home, FolderOpen, LayoutGrid, LogOut, Megaphone, Menu, ReceiptText, ShieldCheck, UserRound, Users, X } from 'lucide-react'
-import { Avatar, Button, DropdownMenu, MenuItem } from '@/components/ui'
+import { Button, DropdownMenu, MenuItem } from '@/components/ui'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
 import { NotificationBell } from '@/features/notifications/components/NotificationBell'
+import { UserAvatar } from '@/features/profile/components/UserAvatar'
 import { useModuleAccess } from '@/features/companies/useModuleAccess'
 import type { PortalModule } from '@/types/domain'
 import { Logo } from './Logo'
@@ -112,7 +113,7 @@ export function AppHeader() {
                   aria-haspopup="menu"
                   className="ml-1 flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-slate-50"
                 >
-                  <Avatar name={user.name} className="h-8 w-8" />
+                  <UserAvatar user={user} className="h-8 w-8" />
                   <span className="hidden text-left leading-tight xl:block">
                     <span className="block text-sm font-medium text-ink">{user.name}</span>
                     <span className="block max-w-44 truncate text-xs text-slate-500">{user.office.name}</span>
@@ -127,7 +128,13 @@ export function AppHeader() {
                     <p className="text-sm font-medium text-ink">{user.name}</p>
                     <p className="text-xs text-slate-500">{user.email}</p>
                   </div>
-                  <MenuItem icon={<UserRound className="h-4 w-4" />} onClick={close}>
+                  <MenuItem
+                    icon={<UserRound className="h-4 w-4" />}
+                    onClick={() => {
+                      close()
+                      navigate('/perfil')
+                    }}
+                  >
                     Meu perfil
                   </MenuItem>
                   {audience === 'office' && (

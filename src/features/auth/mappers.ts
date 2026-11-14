@@ -14,6 +14,8 @@ export function toCurrentUser(dto: UsuarioDto): CurrentUser {
     email: dto.email,
     role: roles[dto.perfil],
     office: { id: dto.escritorio.id, name: dto.escritorio.nome, logoUrl: dto.escritorio.logoUrl },
+    phone: dto.telefone ?? null,
+    photoVersion: dto.fotoVersao ?? null,
   }
 }
 

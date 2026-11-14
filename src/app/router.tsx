@@ -44,6 +44,11 @@ export const router = createBrowserRouter([
               import('@/features/notifications/NotificationsPage').then((m) => ({ Component: m.NotificationsPage })),
           },
           {
+            // Meu perfil: todos os perfis (escritório e cliente).
+            path: 'perfil',
+            lazy: () => import('@/features/profile/ProfilePage').then((m) => ({ Component: m.ProfilePage })),
+          },
+          {
             path: 'certidoes',
             lazy: () => import('@/features/cnd/CndPage').then((m) => ({ Component: m.CndPage })),
           },
