@@ -11,6 +11,9 @@ export interface UsuarioDto {
   email: string
   perfil: PerfilDto
   escritorio: { id: string; nome: string; logoUrl?: string | null }
+  telefone?: string | null
+  /** Muda a cada troca da foto de perfil; nulo quando não há foto. */
+  fotoVersao?: string | null
 }
 
 export interface TokensDto {

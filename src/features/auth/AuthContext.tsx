@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useQueryClient } from '@tanstack/react-query'
 import { registerSessionExpiredHandler } from '@/lib/api'
 import { tokenStorage } from '@/lib/tokenStorage'
-import type { CurrentUser, LoginRequest } from '@/types/auth'
+import type { AuthTokens, CurrentUser, LoginRequest } from '@/types/auth'
 import { authApi } from './api'
 
 type Status = 'loading' | 'authenticated' | 'anonymous'
@@ -12,6 +12,10 @@ interface AuthContextValue {
   user: CurrentUser | null
   login: (body: LoginRequest) => Promise<void>
   logout: () => Promise<void>
+  /** Atualiza os dados do usuário logado (ex.: após salvar o perfil). */
+  updateUser: (user: CurrentUser) => void
+  /** Troca os tokens da sessão atual (ex.: após trocar a senha, que encerra as outras sessões). */
+  replaceSession: (tokens: AuthTokens, user: CurrentUser) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -55,7 +59,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSession()
   }, [clearSession])
 
-  const value = useMemo(() => ({ status, user, login, logout }), [status, user, login, logout])
+  const updateUser = useCallback((me: CurrentUser) => setUser(me), [])
+
+  const replaceSession = useCallback((tokens: AuthTokens, me: CurrentUser) => {
+    tokenStorage.set(tokens)
+    setUser(me)
+  }, [])
+
+  const value = useMemo(
+    () => ({ status, user, login, logout, updateUser, replaceSession }),
+    [status, user, login, logout, updateUser, replaceSession],
+  )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
