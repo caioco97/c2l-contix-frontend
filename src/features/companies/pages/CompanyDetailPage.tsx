@@ -180,7 +180,7 @@ export function CompanyDetailPage() {
           onInvitingChange={setInviting}
         />
       )}
-      {tab === 'responsaveis' && <CompanyResponsiblesTab companyId={companyId} />}
+      {tab === 'responsaveis' && <CompanyResponsiblesTab key={companyId} companyId={companyId} />}
       {tab === 'visual' && <CompanyBrandingTab key={c.id} company={c} />}
       {tab === 'empregados' && (
         <EmployeesPanel companyId={companyId} editable requestHref={(id) => `/atendimento/${companyId}/${id}`} />
