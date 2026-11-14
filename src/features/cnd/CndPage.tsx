@@ -168,7 +168,7 @@ function CompanyCnds({
           <Skeleton className="h-10" />
           <Skeleton className="h-10" />
         </div>
-      ) : isError ? (
+      ) : isError && data.length === 0 ? (
         <EmptyState
           className="m-4"
           icon={<AlertTriangle className="h-8 w-8" />}
